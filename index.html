@@ -2,99 +2,80 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>双人拼图大决斗 - GitHub API 自动建库版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双人拼图大决斗</title>
     <style>
         :root {
-            --purple-main: #c084fc;
-            --purple-glow: rgba(192, 132, 252, 0.5);
-            --purple-bg: #140727;
-
-            --gold-main: #fbbf24;
-            --gold-glow: rgba(251, 191, 36, 0.5);
-            --gold-bg: #1c1503;
+            --purple-main: #a855f7;
+            --purple-bg: #1e112a;
+            --purple-card: #3b0764;
+            --purple-glow: rgba(168, 85, 247, 0.4);
+            
+            --gold-main: #eab308;
+            --gold-bg: #291e05;
+            --gold-card: #713f12;
+            --gold-glow: rgba(234, 179, 8, 0.4);
 
             --cyan-check: #06b6d4;
-            --bg-dark: #0b0f19;
-            --panel-bg: #1e293b;
+            --bg-dark: #0f172a;
         }
 
         * {
             box-sizing: border-box;
             user-select: none;
-            -webkit-user-select: none;
             margin: 0;
             padding: 0;
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-            touch-action: manipulation;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
         }
 
         body {
             background-color: var(--bg-dark);
-            color: #f8fafc;
+            color: #fff;
             height: 100vh;
-            width: 100vw;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
+        /* 顶部简易计时栏 */
         header {
-            height: 64px;
-            background: rgba(15, 23, 42, 0.95);
+            height: 80px;
+            background: #1e293b;
             border-bottom: 2px solid #334155;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 20px;
-            z-index: 20;
-            backdrop-filter: blur(8px);
-        }
-
-        .game-title {
-            font-size: 1.2rem;
-            font-weight: 900;
-            letter-spacing: 1px;
-            background: linear-gradient(135deg, var(--purple-main), var(--gold-main));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            padding: 0 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            z-index: 10;
         }
 
         .mode-badge {
-            background: rgba(56, 189, 248, 0.15);
+            font-size: 1.1rem;
+            font-weight: bold;
             color: #38bdf8;
-            border: 1px solid rgba(56, 189, 248, 0.4);
-            font-size: 0.8rem;
-            font-weight: 700;
-            padding: 4px 10px;
+            background: rgba(56, 189, 248, 0.1);
+            padding: 6px 16px;
             border-radius: 20px;
-            margin-left: 10px;
+            border: 1px solid #38bdf8;
         }
 
-        .timer-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .timer-box {
             background: #0f172a;
+            padding: 6px 20px;
+            border-radius: 12px;
             border: 1px solid #334155;
-            padding: 5px 16px;
-            border-radius: 10px;
-        }
-
-        .timer-val {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #f43f5e;
-            font-family: monospace;
-            min-width: 40px;
             text-align: center;
         }
 
+        .timer-title { font-size: 0.7rem; color: #94a3b8; }
+        .timer-value { font-size: 1.8rem; font-weight: bold; color: #f43f5e; font-family: monospace; }
+
+        /* 对战战场分屏 */
         .battlefield {
             flex: 1;
             display: flex;
             position: relative;
-            overflow: hidden;
         }
 
         .player-side {
@@ -103,93 +84,90 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 12px;
+            padding: 15px;
             position: relative;
         }
 
         .side-purple {
-            background: radial-gradient(circle at 30% 50%, #2e1065 0%, var(--purple-bg) 100%);
-            border-right: 2px solid rgba(255, 255, 255, 0.08);
+            background: radial-gradient(circle at center, #2e1065 0%, var(--purple-bg) 100%);
+            border-right: 2px solid rgba(255, 255, 255, 0.1);
         }
+        .side-purple .player-title { color: var(--purple-main); text-shadow: 0 0 10px var(--purple-glow); }
 
         .side-gold {
-            background: radial-gradient(circle at 70% 50%, #54420a 0%, var(--gold-bg) 100%);
+            background: radial-gradient(circle at center, #54420a 0%, var(--gold-bg) 100%);
         }
+        .side-gold .player-title { color: var(--gold-main); text-shadow: 0 0 10px var(--gold-glow); }
 
-        .player-tag {
-            font-size: 1.3rem;
-            font-weight: 800;
-            margin-bottom: 12px;
+        .player-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
             letter-spacing: 1px;
         }
 
-        .side-purple .player-tag { color: var(--purple-main); text-shadow: 0 0 10px var(--purple-glow); }
-        .side-gold .player-tag { color: var(--gold-main); text-shadow: 0 0 10px var(--gold-glow); }
-
-        .board-container {
+        .board-wrapper {
             position: relative;
             width: 320px;
             height: 320px;
-            max-width: 78vw;
-            max-height: 78vw;
         }
 
-        .puzzle-grid {
+        .puzzle-board {
             width: 100%;
             height: 100%;
             display: grid;
             gap: 6px;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.5);
             padding: 8px;
             border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            position: relative;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
         }
 
-        .side-purple .puzzle-grid { border: 2px solid var(--purple-main); }
-        .side-gold .puzzle-grid { border: 2px solid var(--gold-main); }
+        .side-purple .puzzle-board { border: 2px solid var(--purple-main); }
+        .side-gold .puzzle-board { border: 2px solid var(--gold-main); }
 
+        /* 拼图块 */
         .tile {
             width: 100%;
             height: 100%;
             border-radius: 8px;
             cursor: grab;
             background-repeat: no-repeat;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+            transition: transform 0.15s ease;
             position: relative;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
-            transition: transform 0.15s ease, opacity 0.15s ease;
             touch-action: none;
         }
 
         .tile:active {
             cursor: grabbing;
-            transform: scale(0.95);
-            z-index: 10;
+            transform: scale(1.05);
+            z-index: 5;
         }
 
-        .side-purple .tile { border: 1px solid rgba(192, 132, 252, 0.4); }
-        .side-gold .tile { border: 1px solid rgba(251, 191, 36, 0.4); }
+        .side-purple .tile { border: 1px solid var(--purple-main); }
+        .side-gold .tile { border: 1px solid var(--gold-main); }
 
-        .tile.dragging { opacity: 0.25; }
+        .tile.dragging { opacity: 0.3; }
 
-        /* 正确位置青色勾勾 (✓) */
-        .check-badge {
+        /* 青色正确对勾 */
+        .check-mark {
             position: absolute;
             top: 4px;
             right: 4px;
             width: 22px;
             height: 22px;
             background-color: var(--cyan-check);
-            color: #042f2e;
+            color: #000;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
-            font-weight: 900;
-            box-shadow: 0 0 10px var(--cyan-check);
-            z-index: 12;
-            animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 0 8px var(--cyan-check);
+            z-index: 10;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         @keyframes popIn {
@@ -197,116 +175,103 @@
             100% { transform: scale(1); }
         }
 
-        .overlay-mask {
+        /* 遮罩层（冰冻与算术） */
+        .overlay-layer {
             position: absolute;
-            inset: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             border-radius: 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 30;
-            backdrop-filter: blur(8px);
-            animation: fadeIn 0.2s ease-out;
+            z-index: 20;
+            backdrop-filter: blur(6px);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        .freeze-mask {
-            background: rgba(14, 165, 233, 0.9);
+        .freeze-overlay {
+            background: rgba(14, 165, 233, 0.85);
+            color: #fff;
             border: 2px solid #38bdf8;
-            color: #ffffff;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
         }
 
-        .freeze-icon { font-size: 2.2rem; margin-bottom: 2px; }
-        .freeze-text { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
-        .freeze-sec { font-size: 2.2rem; font-weight: 900; font-family: monospace; }
-
-        .math-mask {
-            background: rgba(15, 23, 42, 0.96);
-            padding: 14px;
-            text-align: center;
+        .freeze-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 8px;
         }
 
-        .side-purple .math-mask { border: 2px solid var(--purple-main); }
-        .side-gold .math-mask { border: 2px solid var(--gold-main); }
+        .math-overlay {
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid #a855f7;
+            padding: 15px;
+            color: #fff;
+        }
+        .side-gold .math-overlay { border-color: #eab308; }
 
-        .math-head { font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px; font-weight: 600; }
-        .math-expr { font-size: 1.8rem; font-weight: 900; color: #38bdf8; margin-bottom: 4px; font-family: monospace; }
-        .math-msg { font-size: 0.8rem; color: #f43f5e; height: 18px; margin-bottom: 8px; font-weight: 600; }
+        .math-title { font-size: 0.85rem; color: #cbd5e1; margin-bottom: 4px; }
+        .math-question { font-size: 1.8rem; font-weight: bold; color: #38bdf8; margin-bottom: 8px; letter-spacing: 2px; }
+        .math-status { font-size: 0.8rem; color: #f43f5e; height: 18px; margin-bottom: 8px; }
 
-        .numpad-grid {
+        .numpad {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 6px;
             width: 100%;
         }
 
-        .num-key {
+        .num-btn {
             background: #334155;
-            color: #f8fafc;
+            color: #fff;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 8px 0;
             font-size: 1.1rem;
-            font-weight: 800;
+            font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 3px 0 #1e293b;
-            transition: all 0.1s;
         }
 
-        .num-key:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px 0 #1e293b;
+        .num-btn:active {
+            transform: scale(0.92);
             background: #38bdf8;
-            color: #0f172a;
+            color: #000;
         }
 
-        .modal-backdrop {
+        /* 弹窗 */
+        .modal-overlay {
             position: fixed;
-            inset: 0;
-            background: rgba(11, 15, 25, 0.9);
-            backdrop-filter: blur(10px);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 100;
-            padding: 20px;
         }
 
-        .modal-box {
-            background: var(--panel-bg);
+        .modal-card {
+            background: #1e293b;
             border: 1px solid #334155;
             border-radius: 20px;
-            padding: 24px;
+            padding: 30px;
             width: 440px;
-            max-width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
         }
 
-        .modal-title {
-            font-size: 1.4rem;
-            font-weight: 900;
-            text-align: center;
-            margin-bottom: 18px;
-            background: linear-gradient(135deg, var(--purple-main), var(--gold-main));
+        .modal-card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #a855f7, #eab308);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .form-row { margin-bottom: 14px; }
-        .form-row label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px; font-weight: 600; }
-
-        .form-row select, .form-row input {
+        .form-group { margin-bottom: 16px; text-align: left; }
+        .form-group label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px; }
+        .form-group select {
             width: 100%;
             padding: 10px;
-            border-radius: 10px;
+            border-radius: 8px;
             background: #0f172a;
             border: 1px solid #334155;
             color: #fff;
@@ -314,209 +279,138 @@
             outline: none;
         }
 
-        .image-manager-box {
-            background: #0f172a;
-            border: 1px dashed #475569;
-            border-radius: 12px;
-            padding: 12px;
-            margin-top: 8px;
-        }
-
-        .api-status-badge {
-            font-size: 0.75rem;
-            color: #38bdf8;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .image-grid-preview {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-top: 10px;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-
-        .img-thumb {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 1;
-            border-radius: 6px;
-            overflow: hidden;
-            border: 2px solid transparent;
-            cursor: pointer;
-        }
-
-        .img-thumb.selected { border-color: #38bdf8; }
-        .img-thumb img { width: 100%; height: 100%; object-fit: cover; }
-
-        .btn-upload {
-            display: block;
-            width: 100%;
-            text-align: center;
-            background: #334155;
-            color: #38bdf8;
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .btn-primary {
+        .btn-start {
             width: 100%;
             padding: 12px;
             margin-top: 10px;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             background: linear-gradient(135deg, var(--purple-main), var(--gold-main));
-            color: #0f172a;
+            color: #000;
             font-size: 1.1rem;
-            font-weight: 900;
+            font-weight: bold;
             cursor: pointer;
         }
 
-        .hidden { display: none !important; }
-
-        .winner-title { font-size: 1.8rem; font-weight: 900; margin-bottom: 15px; text-align: center; }
-        .win-p { color: var(--purple-main); text-shadow: 0 0 15px var(--purple-glow); }
-        .win-g { color: var(--gold-main); text-shadow: 0 0 15px var(--gold-glow); }
-        .win-d { color: #38bdf8; }
-
-        .winner-preview {
-            width: 150px;
-            height: 150px;
-            margin: 0 auto 15px auto;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 2px solid #334155;
-            background-size: cover;
-            background-position: center;
+        .btn-secondary {
+            background: #334155;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-top: 5px;
         }
+
+        .winner-text { font-size: 2rem; font-weight: bold; margin-bottom: 12px; }
+        .winner-purple { color: var(--purple-main); text-shadow: 0 0 15px var(--purple-glow); }
+        .winner-gold { color: var(--gold-main); text-shadow: 0 0 15px var(--gold-glow); }
+        .winner-draw { color: #38bdf8; }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
+    <!-- 顶部极简栏 -->
     <header>
-        <div style="display: flex; align-items: center;">
-            <span class="game-title">⚔️ 拼图大决斗</span>
-            <span class="mode-badge" id="header-mode-badge">汉字模式</span>
-        </div>
-        <div class="timer-badge">
-            <span style="font-size: 0.75rem; color: #94a3b8;">TIME</span>
-            <span class="timer-val" id="header-timer">60</span>
+        <div class="mode-badge" id="display-mode-text">模式: --</div>
+        <div class="timer-box">
+            <div class="timer-title">剩余时间</div>
+            <div class="timer-value" id="display-timer">00</div>
         </div>
     </header>
 
+    <!-- 主战场 -->
     <div class="battlefield">
-        <!-- 紫队 -->
+        <!-- 紫方战区 -->
         <div class="player-side side-purple">
-            <div class="player-tag">💜 紫队</div>
-            <div class="board-container">
-                <div class="puzzle-grid" id="grid-purple"></div>
-
-                <div class="overlay-mask freeze-mask hidden" id="freeze-purple">
-                    <div class="freeze-icon">❄️</div>
-                    <div class="freeze-text">连续2次错误 冻结中</div>
-                    <div class="freeze-sec" id="freeze-sec-purple">2s</div>
+            <div class="player-title">💜 紫方玩家</div>
+            <div class="board-wrapper">
+                <div class="puzzle-board" id="board-purple"></div>
+                <!-- 冰冻遮罩 -->
+                <div class="overlay-layer freeze-overlay hidden" id="freeze-purple">
+                    <div class="freeze-title">❄️ 冰冻 2 秒</div>
+                    <div>连续两次移动错误！</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; margin-top: 5px;" id="freeze-timer-purple">2s</div>
                 </div>
-
-                <div class="overlay-mask math-mask hidden" id="math-purple">
-                    <div class="math-head">🎯 放置正确！解锁题</div>
-                    <div class="math-expr" id="math-expr-purple">3 + 4 = ?</div>
-                    <div class="math-msg" id="math-msg-purple">点击数字解答</div>
-                    <div class="numpad-grid">
-                        <button class="num-key" onclick="handleMathInput('purple', 0)">0</button>
-                        <button class="num-key" onclick="handleMathInput('purple', 1)">1</button>
-                        <button class="num-key" onclick="handleMathInput('purple', 2)">2</button>
-                        <button class="num-key" onclick="handleMathInput('purple', 3)">3</button>
-                        <button class="num-key" onclick="handleMathInput('purple', 4)">4</button>
-                        <button class="num-key" onclick="handleMathInput('purple', 5)">5</button>
-                        <button class="num-key" onclick="handleMathInput('purple', 6)">6</button>
-                        <button class="num-key" onclick="handleMathInput('purple', 7)">7</button>
-                        <button class="num-key" onclick="handleMathInput('purple', 8)">8</button>
-                        <button class="num-key" onclick="handleMathInput('purple', 9)">9</button>
+                <!-- 数学锁关遮罩 -->
+                <div class="overlay-layer math-overlay hidden" id="math-purple">
+                    <div class="math-title">🎯 答对解锁下一步 (个位数算术)</div>
+                    <div class="math-question" id="math-q-purple">3 + 4 = ?</div>
+                    <div class="math-status" id="math-status-purple">点击数字选择答案</div>
+                    <div class="numpad">
+                        <button class="num-btn" onclick="submitMath('purple', 0)">0</button>
+                        <button class="num-btn" onclick="submitMath('purple', 1)">1</button>
+                        <button class="num-btn" onclick="submitMath('purple', 2)">2</button>
+                        <button class="num-btn" onclick="submitMath('purple', 3)">3</button>
+                        <button class="num-btn" onclick="submitMath('purple', 4)">4</button>
+                        <button class="num-btn" onclick="submitMath('purple', 5)">5</button>
+                        <button class="num-btn" onclick="submitMath('purple', 6)">6</button>
+                        <button class="num-btn" onclick="submitMath('purple', 7)">7</button>
+                        <button class="num-btn" onclick="submitMath('purple', 8)">8</button>
+                        <button class="num-btn" onclick="submitMath('purple', 9)">9</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 金队 -->
+        <!-- 金方战区 -->
         <div class="player-side side-gold">
-            <div class="player-tag">👑 金队</div>
-            <div class="board-container">
-                <div class="puzzle-grid" id="grid-gold"></div>
-
-                <div class="overlay-mask freeze-mask hidden" id="freeze-gold">
-                    <div class="freeze-icon">❄️</div>
-                    <div class="freeze-text">连续2次错误 冻结中</div>
-                    <div class="freeze-sec" id="freeze-sec-gold">2s</div>
+            <div class="player-title">👑 金方玩家</div>
+            <div class="board-wrapper">
+                <div class="puzzle-board" id="board-gold"></div>
+                <!-- 冰冻遮罩 -->
+                <div class="overlay-layer freeze-overlay hidden" id="freeze-gold">
+                    <div class="freeze-title">❄️ 冰冻 2 秒</div>
+                    <div>连续两次移动错误！</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; margin-top: 5px;" id="freeze-timer-gold">2s</div>
                 </div>
-
-                <div class="overlay-mask math-mask hidden" id="math-gold">
-                    <div class="math-head">🎯 放置正确！解锁题</div>
-                    <div class="math-expr" id="math-expr-gold">5 - 2 = ?</div>
-                    <div class="math-msg" id="math-msg-gold">点击数字解答</div>
-                    <div class="numpad-grid">
-                        <button class="num-key" onclick="handleMathInput('gold', 0)">0</button>
-                        <button class="num-key" onclick="handleMathInput('gold', 1)">1</button>
-                        <button class="num-key" onclick="handleMathInput('gold', 2)">2</button>
-                        <button class="num-key" onclick="handleMathInput('gold', 3)">3</button>
-                        <button class="num-key" onclick="handleMathInput('gold', 4)">4</button>
-                        <button class="num-key" onclick="handleMathInput('gold', 5)">5</button>
-                        <button class="num-key" onclick="handleMathInput('gold', 6)">6</button>
-                        <button class="num-key" onclick="handleMathInput('gold', 7)">7</button>
-                        <button class="num-key" onclick="handleMathInput('gold', 8)">8</button>
-                        <button class="num-key" onclick="handleMathInput('gold', 9)">9</button>
+                <!-- 数学锁关遮罩 -->
+                <div class="overlay-layer math-overlay hidden" id="math-gold">
+                    <div class="math-title">🎯 答对解锁下一步 (个位数算术)</div>
+                    <div class="math-question" id="math-q-gold">5 - 2 = ?</div>
+                    <div class="math-status" id="math-status-gold">点击数字选择答案</div>
+                    <div class="numpad">
+                        <button class="num-btn" onclick="submitMath('gold', 0)">0</button>
+                        <button class="num-btn" onclick="submitMath('gold', 1)">1</button>
+                        <button class="num-btn" onclick="submitMath('gold', 2)">2</button>
+                        <button class="num-btn" onclick="submitMath('gold', 3)">3</button>
+                        <button class="num-btn" onclick="submitMath('gold', 4)">4</button>
+                        <button class="num-btn" onclick="submitMath('gold', 5)">5</button>
+                        <button class="num-btn" onclick="submitMath('gold', 6)">6</button>
+                        <button class="num-btn" onclick="submitMath('gold', 7)">7</button>
+                        <button class="num-btn" onclick="submitMath('gold', 8)">8</button>
+                        <button class="num-btn" onclick="submitMath('gold', 9)">9</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal-backdrop" id="modal-setup">
-        <div class="modal-box">
-            <div class="modal-title">⚔️ 游戏设置</div>
-
-            <div class="form-row">
-                <label>游戏模式</label>
-                <select id="cfg-mode" onchange="toggleModeSelect()">
-                    <option value="hanzi" selected>汉字模式 (无提示纯拼图)</option>
-                    <option value="image">图片模式 (GitHub自动扫描库)</option>
+    <!-- 开始设置弹窗 -->
+    <div class="modal-overlay" id="setup-modal">
+        <div class="modal-card">
+            <h2>⚔️ 拼图对战 Setup</h2>
+            <div class="form-group">
+                <label>选择模式 (Mode):</label>
+                <select id="select-mode">
+                    <option value="hanzi" selected>汉字模式 (Chinese Character)</option>
+                    <option value="image">图片模式 (Image)</option>
                 </select>
             </div>
-
-            <div class="form-row hidden" id="row-image-select">
-                <label>选择图片题库</label>
-                <select id="cfg-image-list" onchange="refreshImagePreviewGrid()"></select>
-
-                <div class="image-manager-box">
-                    <div class="api-status-badge" id="github-api-status">
-                        🔍 正在连接 GitHub API 扫描仓库...
-                    </div>
-                    <label class="btn-upload">
-                        📁 上传临时图片 (.png, .jpg, .jpeg)
-                        <input type="file" id="file-uploader" accept="image/png, image/jpeg, image/jpg" multiple style="display: none;" onchange="handleFileUpload(event)">
-                    </label>
-                    <div class="image-grid-preview" id="custom-img-preview"></div>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <label>拼图规格</label>
-                <select id="cfg-grid">
-                    <option value="2">2 × 2 (入门)</option>
-                    <option value="3" selected>3 × 3 (九宫格)</option>
-                    <option value="4">4 × 4 (高手)</option>
+            <div class="form-group">
+                <label>拼图规格 (Grid Size):</label>
+                <select id="select-grid">
+                    <option value="2">2 × 2 (简单)</option>
+                    <option value="3" selected>3 × 3 (经典九宫格)</option>
+                    <option value="4">4 × 4 (困难)</option>
                 </select>
             </div>
-
-            <div class="form-row">
-                <label>时间限制</label>
-                <select id="cfg-time">
+            <div class="form-group">
+                <label>时间限制 (Time Limit):</label>
+                <select id="select-time">
                     <option value="30">30 秒</option>
                     <option value="60" selected>60 秒</option>
                     <option value="90">90 秒</option>
@@ -524,266 +418,231 @@
                 </select>
             </div>
 
-            <button class="btn-primary" onclick="launchGame()">开始决斗</button>
+            <!-- 本地临时上传补充 -->
+            <div style="margin: 15px 0; border-top: 1px solid #334155; padding-top: 12px; text-align: left;">
+                <label style="font-size: 0.8rem; color: #94a3b8;">本地上传临时图片 (无需代码修改):</label>
+                <input type="file" id="local-img-input" accept="image/png, image/jpeg, image/jpg" style="display:none;" onchange="handleLocalUpload(event)">
+                <button class="btn-secondary" onclick="document.getElementById('local-img-input').click()">📁 选择文件添加并使用</button>
+            </div>
+
+            <button class="btn-start" onclick="startGame()">开始游戏</button>
         </div>
     </div>
 
-    <div class="modal-backdrop hidden" id="modal-result">
-        <div class="modal-box" style="text-align: center;">
-            <div class="winner-title" id="result-winner-title">胜负已分</div>
-            <div class="winner-preview" id="result-preview"></div>
-            <p id="result-desc" style="color: #94a3b8; margin-bottom: 18px; font-size: 0.9rem;"></p>
-            <button class="btn-primary" onclick="reopenSetup()">再来一局</button>
+    <!-- 结算弹窗 -->
+    <div class="modal-overlay hidden" id="result-modal">
+        <div class="modal-card">
+            <div class="winner-text" id="winner-title">获胜者</div>
+            <p id="winner-desc" style="color: #94a3b8; margin-bottom: 20px;"></p>
+            <button class="btn-start" onclick="showSetup()">再来一局</button>
         </div>
     </div>
 
     <script>
-        const HANZI_LIST = ["福", "龙", "胜", "智", "勇", "华", "瑞", "雅", "德", "春", "威", "光", "星", "耀"];
+        // 预设默认文字/图片降级题库
+        const DEFAULT_HANZI = ["福", "龙", "胜", "智", "勇", "华", "瑞", "雅", "德", "春"];
 
-        let imageLibrary = [
-            { id: 'default_1', name: '预设图1', url: createGradientDataUrl('⚡ 极速对决', '#3b82f6', '#8b5cf6') },
-            { id: 'default_2', name: '预设图2', url: createGradientDataUrl('🔥 王者风范', '#f59e0b', '#ef4444') }
-        ];
-
-        let selectedImageObj = null;
         let gameMode = 'hanzi';
         let gridSize = 3;
         let timeLimit = 60;
         let timerInterval = null;
         let timeRemaining = 0;
-        let activeDataUrl = '';
+        let imgDataUrl = "";
 
+        // GitHub 仓库资源库缓存
+        let githubHanziImages = [];
+        let githubPictureImages = [];
+
+        // 玩家独立状态
         let players = {
             purple: { board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null },
             gold: { board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null }
         };
 
+        // 页面加载完成后，自动扫描 GitHub 仓库中的 images/ 文件夹
         window.addEventListener('DOMContentLoaded', () => {
-            loadLocalStorageImages();
-            autoScanGitHubImages();
-            refreshImagePreviewGrid();
+            fetchGitHubRepositoryImages();
         });
 
-        // 🚀 核心改进：通过 GitHub Contents API 自动遍历 luckyyin-source/pinTu 仓库内容
-        async function autoScanGitHubImages() {
-            const statusEl = document.getElementById('github-api-status');
-            const repo = 'luckyyin-source/pinTu';
-            const imgRegex = /\.(png|jpe?g|webp|gif)$/i;
-            let foundCount = 0;
+        // 通过 GitHub API 扫描仓库图片并按文件夹分类
+        async function fetchGitHubRepositoryImages() {
+            const repoOwner = "luckyyin-source";
+            const repoName = "pinTu";
 
-            async function scanFolder(path = '') {
-                try {
-                    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`);
-                    if (!res.ok) return;
-                    const items = await res.json();
-                    if (Array.isArray(items)) {
-                        for (const item of items) {
-                            if (item.type === 'file' && imgRegex.test(item.name)) {
-                                const rawUrl = item.download_url || `https://luckyyin-source.github.io/pinTu/${item.path}`;
-                                if (!imageLibrary.some(i => i.url === rawUrl)) {
-                                    imageLibrary.push({
-                                        id: 'gh_' + item.sha,
-                                        name: item.name,
-                                        url: rawUrl
-                                    });
-                                    foundCount++;
-                                }
-                            } else if (item.type === 'dir' && (item.name.toLowerCase() === 'images' || item.name.toLowerCase() === 'img')) {
-                                await scanFolder(item.path);
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.warn('GitHub API Fetch Note:', e);
-                }
-            }
-
-            await scanFolder('');
-
-            if (foundCount > 0) {
-                statusEl.innerText = `✅ GitHub API 自动抓取成功！扫描到 ${foundCount} 张图片题库`;
-                statusEl.style.color = '#34d399';
-            } else {
-                statusEl.innerText = `🌐 GitHub 扫描完成 (上传 PNG/JPG 到根目录或 images/ 即可自动生效)`;
-                statusEl.style.color = '#94a3b8';
-            }
-
-            populateImageDropdown();
-            refreshImagePreviewGrid();
-        }
-
-        function createGradientDataUrl(text, c1, c2) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 320; canvas.height = 320;
-            const ctx = canvas.getContext('2d');
-            const grad = ctx.createLinearGradient(0, 0, 320, 320);
-            grad.addColorStop(0, c1);
-            grad.addColorStop(1, c2);
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 320, 320);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 36px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(text, 160, 160);
-            return canvas.toDataURL();
-        }
-
-        function loadLocalStorageImages() {
+            // 1. 扫描 images/hanzi/ 文件夹
             try {
-                const stored = localStorage.getItem('puzzle_custom_images');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    parsed.forEach(img => {
-                        if (!imageLibrary.some(i => i.id === img.id)) imageLibrary.push(img);
+                const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/images/hanzi`);
+                if (res.ok) {
+                    const files = await res.json();
+                    githubHanziImages = files
+                        .filter(f => f.type === 'file' && /\.(png|jpe?g)$/i.test(f.name))
+                        .map(f => encodeURI(f.download_url));
+                }
+            } catch (e) { console.log("扫描 images/hanzi 失败，使用默认文字处理"); }
+
+            // 2. 扫描 images/picture/ 文件夹
+            try {
+                const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/images/picture`);
+                if (res.ok) {
+                    const files = await res.json();
+                    githubPictureImages = files
+                        .filter(f => f.type === 'file' && /\.(png|jpe?g)$/i.test(f.name))
+                        .map(f => encodeURI(f.download_url));
+                }
+            } catch (e) { console.log("扫描 images/picture 失败"); }
+
+            // 3. 扫描根目录与 images/ 直属目录（兼容旧存放模式，如 糖.png）
+            try {
+                const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/images`);
+                if (res.ok) {
+                    const files = await res.json();
+                    files.forEach(f => {
+                        if (f.type === 'file' && /\.(png|jpe?g)$/i.test(f.name)) {
+                            // 若没在子文件夹，默认归类入图片库与汉字库
+                            const url = encodeURI(f.download_url);
+                            if (!githubHanziImages.includes(url)) githubHanziImages.push(url);
+                            if (!githubPictureImages.includes(url)) githubPictureImages.push(url);
+                        }
                     });
                 }
             } catch (e) {}
         }
 
-        function handleFileUpload(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-
-            Array.from(files).forEach(file => {
-                if (!file.type.match('image.*')) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const newImg = {
-                        id: 'custom_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                        name: file.name,
-                        url: e.target.result
-                    };
-                    imageLibrary.push(newImg);
-                    saveCustomImagesToStorage();
-                    populateImageDropdown();
-                    refreshImagePreviewGrid();
-                };
-                reader.readAsDataURL(file);
-            });
+        // 显示设置菜单
+        function showSetup() {
+            document.getElementById("result-modal").classList.add("hidden");
+            document.getElementById("setup-modal").classList.remove("hidden");
         }
 
-        function saveCustomImagesToStorage() {
-            try {
-                const customOnly = imageLibrary.filter(i => i.id.startsWith('custom_'));
-                localStorage.setItem('puzzle_custom_images', JSON.stringify(customOnly));
-            } catch (e) {}
+        // 本地文件上传支持
+        function handleLocalUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const url = event.target.result;
+                const currentSelectedMode = document.getElementById("select-mode").value;
+                if (currentSelectedMode === 'hanzi') {
+                    githubHanziImages.push(url);
+                } else {
+                    githubPictureImages.push(url);
+                }
+                alert("临时图片添加成功！已放入当前模式库中。");
+            };
+            reader.readAsDataURL(file);
         }
 
-        function toggleModeSelect() {
-            const mode = document.getElementById('cfg-mode').value;
-            const imgRow = document.getElementById('row-image-select');
-            if (mode === 'image') {
-                imgRow.classList.remove('hidden');
-                populateImageDropdown();
-                refreshImagePreviewGrid();
-            } else {
-                imgRow.classList.add('hidden');
-            }
-        }
+        // 开始游戏
+        function startGame() {
+            gameMode = document.getElementById("select-mode").value;
+            gridSize = parseInt(document.getElementById("select-grid").value);
+            timeLimit = parseInt(document.getElementById("select-time").value);
 
-        function populateImageDropdown() {
-            const select = document.getElementById('cfg-image-list');
-            select.innerHTML = '';
-            imageLibrary.forEach(img => {
-                const opt = document.createElement('option');
-                opt.value = img.id;
-                opt.innerText = img.name;
-                select.appendChild(opt);
-            });
-        }
-
-        function refreshImagePreviewGrid() {
-            const container = document.getElementById('custom-img-preview');
-            container.innerHTML = '';
-            const currentSelectedId = document.getElementById('cfg-image-list').value;
-
-            imageLibrary.forEach(img => {
-                const thumb = document.createElement('div');
-                thumb.className = 'img-thumb' + (img.id === currentSelectedId ? ' selected' : '');
-                thumb.onclick = () => {
-                    document.getElementById('cfg-image-list').value = img.id;
-                    refreshImagePreviewGrid();
-                };
-
-                const imgEl = document.createElement('img');
-                imgEl.src = img.url;
-                thumb.appendChild(imgEl);
-                container.appendChild(thumb);
-            });
-        }
-
-        function reopenSetup() {
-            document.getElementById('modal-result').classList.add('hidden');
-            document.getElementById('modal-setup').classList.remove('hidden');
-        }
-
-        function launchGame() {
-            gameMode = document.getElementById('cfg-mode').value;
-            gridSize = parseInt(document.getElementById('cfg-grid').value);
-            timeLimit = parseInt(document.getElementById('cfg-time').value);
-
-            document.getElementById('modal-setup').classList.add('hidden');
+            document.getElementById("setup-modal").classList.add("hidden");
+            document.getElementById("display-mode-text").innerText = `模式: ${gameMode === 'hanzi' ? '汉字拼图' : '图片拼图'}`;
 
             if (gameMode === 'hanzi') {
-                const char = HANZI_LIST[Math.floor(Math.random() * HANZI_LIST.length)];
-                document.getElementById('header-mode-badge').innerText = `汉字: ${char}`;
-                renderHanziToCanvas(char, (dataUrl) => {
-                    activeDataUrl = dataUrl;
-                    initGameData();
-                });
+                // 如果 GitHub images/hanzi/ 有图片，优先随机加载
+                if (githubHanziImages.length > 0) {
+                    const randomImgUrl = githubHanziImages[Math.floor(Math.random() * githubHanziImages.length)];
+                    loadCustomImageUrl(randomImgUrl, () => initGameBoards());
+                } else {
+                    // 否则自动根据汉字渲染图片
+                    const randomChar = DEFAULT_HANZI[Math.floor(Math.random() * DEFAULT_HANZI.length)];
+                    renderTextCanvas(randomChar, (url) => {
+                        imgDataUrl = url;
+                        initGameBoards();
+                    });
+                }
             } else {
-                const selectedId = document.getElementById('cfg-image-list').value;
-                selectedImageObj = imageLibrary.find(i => i.id === selectedId) || imageLibrary[0];
-                document.getElementById('header-mode-badge').innerText = `图片: ${selectedImageObj.name}`;
-                activeDataUrl = selectedImageObj.url;
-                initGameData();
+                // 图片模式
+                if (githubPictureImages.length > 0) {
+                    const randomImgUrl = githubPictureImages[Math.floor(Math.random() * githubPictureImages.length)];
+                    loadCustomImageUrl(randomImgUrl, () => initGameBoards());
+                } else {
+                    // 若无图片，自动生成彩色图形提示
+                    renderFallbackPictureCanvas("图片模式", (url) => {
+                        imgDataUrl = url;
+                        initGameBoards();
+                    });
+                }
             }
         }
 
-        function renderHanziToCanvas(char, callback) {
+        // 初始化棋盘
+        function initGameBoards() {
+            initPlayerBoard('purple');
+            initPlayerBoard('gold');
+            startTimer();
+        }
+
+        // 将外部图片链接转为 HTML Canvas 图片
+        function loadCustomImageUrl(url, callback) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 320;
+                canvas.height = 320;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, 320, 320);
+                imgDataUrl = canvas.toDataURL();
+                callback();
+            };
+            img.onerror = () => {
+                renderFallbackPictureCanvas("加载失败", (fallbackUrl) => {
+                    imgDataUrl = fallbackUrl;
+                    callback();
+                });
+            };
+            img.src = url;
+        }
+
+        // 渲染文本图片 Canvas
+        function renderTextCanvas(char, callback) {
             const canvas = document.createElement('canvas');
             canvas.width = 320; canvas.height = 320;
             const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = "#1e293b";
-            ctx.fillRect(0, 0, 320, 320);
-
-            // 米字格背景线
-            ctx.strokeStyle = "#334155";
-            ctx.lineWidth = 2;
+            ctx.fillStyle = "#1e293b"; ctx.fillRect(0, 0, 320, 320);
+            ctx.strokeStyle = "#334155"; ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(160, 0); ctx.lineTo(160, 320);
             ctx.moveTo(0, 160); ctx.lineTo(320, 160);
-            ctx.moveTo(0, 0); ctx.lineTo(320, 320);
-            ctx.moveTo(320, 0); ctx.lineTo(0, 320);
             ctx.stroke();
-
-            // 绘制汉字（无拼音、无文本提示）
             ctx.fillStyle = "#f8fafc";
             ctx.font = 'bold 220px "Kaiti", "STKaiti", serif';
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
             ctx.fillText(char, 160, 170);
-
             callback(canvas.toDataURL());
         }
 
-        function initGameData() {
-            setupPlayerBoard('purple');
-            setupPlayerBoard('gold');
-            startCountdown();
+        function renderFallbackPictureCanvas(text, callback) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 320; canvas.height = 320;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#0284c7"; ctx.fillRect(0, 0, 320, 320);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = 'bold 36px sans-serif';
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(text, 160, 160);
+            callback(canvas.toDataURL());
         }
 
-        function setupPlayerBoard(p) {
-            const total = gridSize * gridSize;
-            let arr = Array.from({length: total}, (_, i) => i);
+        // 初始化单人棋盘
+        function initPlayerBoard(p) {
+            const boardEl = document.getElementById(`board-${p}`);
+            boardEl.innerHTML = "";
+            boardEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            boardEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+
+            const totalTiles = gridSize * gridSize;
+            let indices = Array.from({length: totalTiles}, (_, i) => i);
 
             do {
-                arr.sort(() => Math.random() - 0.5);
-            } while (checkWin(arr));
+                indices.sort(() => Math.random() - 0.5);
+            } while (checkArrayWin(indices));
 
-            players[p].board = [...arr];
+            players[p].board = [...indices];
             players[p].consecutiveErrors = 0;
             players[p].isFrozen = false;
             players[p].isMathLocked = false;
@@ -791,284 +650,274 @@
             document.getElementById(`freeze-${p}`).classList.add("hidden");
             document.getElementById(`math-${p}`).classList.add("hidden");
 
-            renderGridUI(p);
+            renderBoardTiles(p);
         }
 
-        function renderGridUI(p) {
-            const gridEl = document.getElementById(`grid-${p}`);
-            gridEl.innerHTML = "";
-            gridEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-            gridEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+        // 渲染 Tile 节点
+        function renderBoardTiles(p) {
+            const boardEl = document.getElementById(`board-${p}`);
+            boardEl.innerHTML = "";
 
-            players[p].board.forEach((tileIdx, slotPos) => {
-                const tile = document.createElement('div');
-                tile.className = 'tile';
+            players[p].board.forEach((tileIdx, currentPos) => {
+                const tile = document.createElement("div");
+                tile.className = "tile";
+                tile.draggable = !players[p].isFrozen && !players[p].isMathLocked;
                 tile.dataset.player = p;
-                tile.dataset.slot = slotPos;
+                tile.dataset.originalIndex = tileIdx;
+                tile.dataset.currentPos = currentPos;
 
-                const r = Math.floor(tileIdx / gridSize);
-                const c = tileIdx % gridSize;
-                const pct = 100 / (gridSize - 1);
+                const row = Math.floor(tileIdx / gridSize);
+                const col = tileIdx % gridSize;
+                const percentage = 100 / (gridSize - 1);
 
-                tile.style.backgroundImage = `url(${activeDataUrl})`;
+                tile.style.backgroundImage = `url(${imgDataUrl})`;
                 tile.style.backgroundSize = `${gridSize * 100}% ${gridSize * 100}%`;
-                tile.style.backgroundPosition = `${c * pct}% ${r * pct}%`;
+                tile.style.backgroundPosition = `${col * percentage}% ${row * percentage}%`;
 
-                // ✅ 规则：正确位置即刻添加青色小勾勾 (✓)
-                if (tileIdx === slotPos) {
-                    const check = document.createElement('div');
-                    check.className = 'check-badge';
-                    check.innerText = '✓';
+                // ✅ 规则：正确位置加青色勾勾
+                if (tileIdx === currentPos) {
+                    const check = document.createElement("div");
+                    check.className = "check-mark";
+                    check.innerText = "✓";
                     tile.appendChild(check);
                 }
 
-                bindDragAndTouchEvents(tile);
-                gridEl.appendChild(tile);
+                tile.addEventListener("dragstart", handleDragStart);
+                tile.addEventListener("dragover", handleDragOver);
+                tile.addEventListener("drop", handleDrop);
+                tile.addEventListener("dragend", handleDragEnd);
+
+                boardEl.appendChild(tile);
             });
         }
 
-        let draggedSlotInfo = null;
+        let draggedTile = null;
 
-        function bindDragAndTouchEvents(tile) {
-            tile.draggable = true;
-
-            tile.addEventListener('dragstart', (e) => {
-                const p = tile.dataset.player;
-                if (players[p].isFrozen || players[p].isMathLocked) {
-                    e.preventDefault(); return;
-                }
-                draggedSlotInfo = { player: p, slot: parseInt(tile.dataset.slot) };
-                tile.classList.add('dragging');
-            });
-
-            tile.addEventListener('dragover', (e) => e.preventDefault());
-
-            tile.addEventListener('drop', (e) => {
+        function handleDragStart(e) {
+            const p = this.dataset.player;
+            if (players[p].isFrozen || players[p].isMathLocked) {
                 e.preventDefault();
-                if (!draggedSlotInfo) return;
-                const targetSlot = parseInt(tile.dataset.slot);
-                const p = tile.dataset.player;
-                if (p === draggedSlotInfo.player) {
-                    executeSwap(p, draggedSlotInfo.slot, targetSlot);
-                }
-            });
-
-            tile.addEventListener('dragend', () => {
-                tile.classList.remove('dragging');
-                draggedSlotInfo = null;
-            });
-
-            tile.addEventListener('touchstart', () => {
-                const p = tile.dataset.player;
-                if (players[p].isFrozen || players[p].isMathLocked) return;
-                draggedSlotInfo = { player: p, slot: parseInt(tile.dataset.slot) };
-                tile.classList.add('dragging');
-            }, {passive: true});
-
-            tile.addEventListener('touchend', (e) => {
-                tile.classList.remove('dragging');
-                if (!draggedSlotInfo) return;
-                const touch = e.changedTouches[0];
-                const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-                if (targetEl && targetEl.closest('.tile')) {
-                    const closestTile = targetEl.closest('.tile');
-                    const targetPlayer = closestTile.dataset.player;
-                    const targetSlot = parseInt(closestTile.dataset.slot);
-                    if (targetPlayer === draggedSlotInfo.player) {
-                        executeSwap(targetPlayer, draggedSlotInfo.slot, targetSlot);
-                    }
-                }
-                draggedSlotInfo = null;
-            });
+                return;
+            }
+            draggedTile = this;
+            this.classList.add("dragging");
+            e.dataTransfer.setData("text/plain", this.dataset.currentPos);
         }
 
-        function executeSwap(p, slotA, slotB) {
-            if (slotA === slotB) return;
+        function handleDragOver(e) { e.preventDefault(); }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            if (!draggedTile) return;
+
+            const targetTile = this;
+            const p = draggedTile.dataset.player;
+
+            if (p !== targetTile.dataset.player) return;
             if (players[p].isFrozen || players[p].isMathLocked) return;
 
-            const temp = players[p].board[slotA];
-            players[p].board[slotA] = players[p].board[slotB];
-            players[p].board[slotB] = temp;
+            const posA = parseInt(draggedTile.dataset.currentPos);
+            const posB = parseInt(targetTile.dataset.currentPos);
 
-            const tileAGood = (players[p].board[slotA] === slotA);
-            const tileBGood = (players[p].board[slotB] === slotB);
+            if (posA === posB) return;
 
-            if (tileAGood || tileBGood) {
+            const temp = players[p].board[posA];
+            players[p].board[posA] = players[p].board[posB];
+            players[p].board[posB] = temp;
+
+            const tileAIsCorrect = (players[p].board[posA] === posA);
+            const tileBIsCorrect = (players[p].board[posB] === posB);
+
+            if (tileAIsCorrect || tileBIsCorrect) {
                 players[p].consecutiveErrors = 0;
-                renderGridUI(p);
-                openMathChallenge(p);
+                renderBoardTiles(p);
+                triggerMathChallenge(p);
             } else {
                 players[p].consecutiveErrors++;
-                renderGridUI(p);
+                renderBoardTiles(p);
 
-                // ✅ 规则：连续拖错 2 次冻结 2 秒
+                // ✅ 规则：连续两次拖曳错误冻结 2 秒
                 if (players[p].consecutiveErrors >= 2) {
-                    triggerFreezeOverlay(p);
+                    triggerFreeze(p);
                 }
             }
         }
 
-        function triggerFreezeOverlay(p) {
+        function handleDragEnd() {
+            if (draggedTile) {
+                draggedTile.classList.remove("dragging");
+                draggedTile = null;
+            }
+        }
+
+        // 冻结 2 秒处理
+        function triggerFreeze(p) {
             players[p].isFrozen = true;
             players[p].consecutiveErrors = 0;
 
-            const freezeEl = document.getElementById(`freeze-${p}`);
-            const freezeSecEl = document.getElementById(`freeze-sec-${p}`);
-            freezeEl.classList.remove('hidden');
+            const freezeOverlay = document.getElementById(`freeze-${p}`);
+            const freezeTimerEl = document.getElementById(`freeze-timer-${p}`);
+            freezeOverlay.classList.remove("hidden");
 
-            let countdown = 2;
-            freezeSecEl.innerText = `${countdown}s`;
+            let remainingSec = 2;
+            freezeTimerEl.innerText = `${remainingSec}s`;
 
-            const timer = setInterval(() => {
-                countdown--;
-                if (countdown > 0) {
-                    freezeSecEl.innerText = `${countdown}s`;
+            renderBoardTiles(p);
+
+            const interval = setInterval(() => {
+                remainingSec--;
+                if (remainingSec > 0) {
+                    freezeTimerEl.innerText = `${remainingSec}s`;
                 } else {
-                    clearInterval(timer);
+                    clearInterval(interval);
                     players[p].isFrozen = false;
-                    freezeEl.classList.add('hidden');
+                    freezeOverlay.classList.add("hidden");
+                    renderBoardTiles(p);
                 }
             }, 1000);
         }
 
-        function openMathChallenge(p) {
+        // 触发数学算术锁关题
+        function triggerMathChallenge(p) {
             players[p].isMathLocked = true;
             players[p].currentMath = generateSingleDigitMath();
 
-            const mathMask = document.getElementById(`math-${p}`);
-            const mathExpr = document.getElementById(`math-expr-${p}`);
-            const mathMsg = document.getElementById(`math-msg-${p}`);
+            const mathOverlay = document.getElementById(`math-${p}`);
+            const mathQ = document.getElementById(`math-q-${p}`);
+            const mathStatus = document.getElementById(`math-status-${p}`);
 
-            mathExpr.innerText = players[p].currentMath.expr;
-            mathMsg.innerText = "点击数字解答";
-            mathMsg.style.color = "#94a3b8";
+            mathQ.innerText = players[p].currentMath.q;
+            mathStatus.innerText = "点击数字选择答案";
+            mathStatus.style.color = "#cbd5e1";
 
-            mathMask.classList.remove('hidden');
+            mathOverlay.classList.remove("hidden");
+            renderBoardTiles(p);
         }
 
+        // 生成个位数加减乘除题（答案限定 0-9）
         function generateSingleDigitMath() {
             const ops = ['+', '-', '*', '/'];
             const op = ops[Math.floor(Math.random() * ops.length)];
-            let a, b, ans;
+            let num1, num2, answer;
 
             if (op === '+') {
-                ans = Math.floor(Math.random() * 10);
-                a = Math.floor(Math.random() * (ans + 1));
-                b = ans - a;
+                answer = Math.floor(Math.random() * 10);
+                num1 = Math.floor(Math.random() * (answer + 1));
+                num2 = answer - num1;
             } else if (op === '-') {
-                a = Math.floor(Math.random() * 10);
-                b = Math.floor(Math.random() * (a + 1));
-                ans = a - b;
+                num1 = Math.floor(Math.random() * 10);
+                num2 = Math.floor(Math.random() * (num1 + 1));
+                answer = num1 - num2;
             } else if (op === '*') {
                 const pairs = [];
-                for (let i = 0; i <= 9; i++) {
-                    for (let j = 0; j <= 9; j++) {
-                        if (i * j <= 9) pairs.push([i, j]);
+                for (let a = 0; a <= 9; a++) {
+                    for (let b = 0; b <= 9; b++) {
+                        if (a * b <= 9) pairs.push([a, b]);
                     }
                 }
                 const pair = pairs[Math.floor(Math.random() * pairs.length)];
-                a = pair[0]; b = pair[1]; ans = a * b;
-            } else {
-                ans = Math.floor(Math.random() * 10);
-                b = Math.floor(Math.random() * 9) + 1;
-                a = ans * b;
+                num1 = pair[0]; num2 = pair[1]; answer = num1 * num2;
+            } else if (op === '/') {
+                answer = Math.floor(Math.random() * 10);
+                num2 = Math.floor(Math.random() * 9) + 1;
+                num1 = answer * num2;
             }
 
-            const symMap = { '+': '+', '-': '-', '*': '×', '/': '÷' };
-            return { expr: `${a} ${symMap[op]} ${b} = ?`, ans: ans };
+            const symbols = { '+': '+', '-': '-', '*': '×', '/': '÷' };
+            return { q: `${num1} ${symbols[op]} ${num2} = ?`, a: answer };
         }
 
-        function handleMathInput(p, val) {
+        // 验证数学题答案
+        function submitMath(p, selectedNum) {
             if (!players[p].isMathLocked) return;
 
-            const mathMsg = document.getElementById(`math-msg-${p}`);
+            const mathStatus = document.getElementById(`math-status-${p}`);
 
-            if (val === players[p].currentMath.ans) {
+            if (selectedNum === players[p].currentMath.a) {
                 players[p].isMathLocked = false;
-                document.getElementById(`math-${p}`).classList.add('hidden');
+                document.getElementById(`math-${p}`).classList.add("hidden");
+                renderBoardTiles(p);
 
-                if (checkWin(players[p].board)) {
-                    triggerWin(p);
+                if (checkArrayWin(players[p].board)) {
+                    endGame(p);
                 }
             } else {
-                mathMsg.innerText = "答案错误！惩罚多做一题！";
-                mathMsg.style.color = "#f43f5e";
-
+                mathStatus.innerText = "❌ 答案错误！惩罚多做一题！";
+                mathStatus.style.color = "#f43f5e";
                 players[p].currentMath = generateSingleDigitMath();
                 setTimeout(() => {
-                    document.getElementById(`math-expr-${p}`).innerText = players[p].currentMath.expr;
-                }, 200);
+                    document.getElementById(`math-q-${p}`).innerText = players[p].currentMath.q;
+                }, 300);
             }
         }
 
-        function checkWin(board) {
-            for (let i = 0; i < board.length; i++) {
-                if (board[i] !== i) return false;
+        function checkArrayWin(arr) {
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i] !== i) return false;
             }
             return true;
         }
 
-        function startCountdown() {
+        // 计时器控制
+        function startTimer() {
             clearInterval(timerInterval);
             timeRemaining = timeLimit;
 
-            const timerEl = document.getElementById('header-timer');
+            const timerDisplay = document.getElementById("display-timer");
             if (timeLimit === 0) {
-                timerEl.innerText = "∞";
+                timerDisplay.innerText = "∞";
                 return;
             }
 
-            timerEl.innerText = timeRemaining;
+            timerDisplay.innerText = timeRemaining;
+
             timerInterval = setInterval(() => {
                 timeRemaining--;
-                timerEl.innerText = timeRemaining;
+                timerDisplay.innerText = timeRemaining;
 
                 if (timeRemaining <= 0) {
                     clearInterval(timerInterval);
-                    evaluateTimeout();
+                    evaluateTimeoutWinner();
                 }
             }, 1000);
         }
 
-        function evaluateTimeout() {
-            let pScore = 0, gScore = 0;
-            players.purple.board.forEach((v, i) => { if (v === i) pScore++; });
-            players.gold.board.forEach((v, i) => { if (v === i) gScore++; });
+        function evaluateTimeoutWinner() {
+            let purpleCorrect = 0, goldCorrect = 0;
+            players.purple.board.forEach((val, idx) => { if (val === idx) purpleCorrect++; });
+            players.gold.board.forEach((val, idx) => { if (val === idx) goldCorrect++; });
 
-            if (pScore > gScore) {
-                triggerWin('purple', `时间到！紫队完成 ${pScore} 块，领先金队 (${gScore} 块)`);
-            } else if (gScore > pScore) {
-                triggerWin('gold', `时间到！金队完成 ${gScore} 块，领先紫队 (${pScore} 块)`);
+            if (purpleCorrect > goldCorrect) {
+                endGame('purple', `时间到！紫方正确 ${purpleCorrect} 块，优于金方 ${goldCorrect} 块`);
+            } else if (goldCorrect > purpleCorrect) {
+                endGame('gold', `时间到！金方正确 ${goldCorrect} 块，优于紫方 ${purpleCorrect} 块`);
             } else {
-                triggerWin('draw', `时间到！双方均完成 ${pScore} 块，平局！`);
+                endGame('draw', `时间到！双方均正确完成 ${purpleCorrect} 块！`);
             }
         }
 
-        function triggerWin(winner, customMsg = "") {
+        function endGame(winner, customMessage = "") {
             clearInterval(timerInterval);
 
-            const modal = document.getElementById('modal-result');
-            const titleEl = document.getElementById('result-winner-title');
-            const previewEl = document.getElementById('result-preview');
-            const descEl = document.getElementById('result-desc');
-
-            previewEl.style.backgroundImage = `url(${activeDataUrl})`;
+            const resultModal = document.getElementById("result-modal");
+            const winnerTitle = document.getElementById("winner-title");
+            const winnerDesc = document.getElementById("winner-desc");
 
             if (winner === 'purple') {
-                titleEl.innerText = "💜 紫队 获胜！";
-                titleEl.className = "winner-title win-p";
-                descEl.innerText = customMsg || "率先完成拼图并突破数学锁关！";
+                winnerTitle.innerText = "💜 紫方玩家 获胜！";
+                winnerTitle.className = "winner-text winner-purple";
+                winnerDesc.innerText = customMessage || "率先还原全部拼图并破解算术关卡！";
             } else if (winner === 'gold') {
-                titleEl.innerText = "👑 金队 获胜！";
-                titleEl.className = "winner-title win-g";
-                descEl.innerText = customMsg || "率先完成拼图并突破数学锁关！";
+                winnerTitle.innerText = "👑 金方玩家 获胜！";
+                winnerTitle.className = "winner-text winner-gold";
+                winnerDesc.innerText = customMessage || "率先还原全部拼图并破解算术关卡！";
             } else {
-                titleEl.innerText = "🤝 势均力敌 - 平局！";
-                titleEl.className = "winner-title win-d";
-                descEl.innerText = customMsg;
+                winnerTitle.innerText = "🤝 势均力敌 - 平局！";
+                winnerTitle.className = "winner-text winner-draw";
+                winnerDesc.innerText = customMessage;
             }
 
-            modal.classList.remove('hidden');
+            resultModal.classList.remove("hidden");
         }
     </script>
 </body>
