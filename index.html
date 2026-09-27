@@ -39,7 +39,7 @@
 
         /* 顶部简易计时栏 */
         header {
-            height: 80px;
+            height: 75px;
             background: #1e293b;
             border-bottom: 2px solid #334155;
             display: flex;
@@ -100,16 +100,19 @@
         .side-gold .player-title { color: var(--gold-main); text-shadow: 0 0 10px var(--gold-glow); }
 
         .player-title {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             letter-spacing: 1px;
         }
 
+        /* 拼图网格容器（已放大20% -> 384px） */
         .board-wrapper {
             position: relative;
-            width: 320px;
-            height: 320px;
+            width: 384px;
+            height: 384px;
+            max-width: 90vw;
+            max-height: 90vw;
         }
 
         .puzzle-board {
@@ -155,15 +158,15 @@
             position: absolute;
             top: 4px;
             right: 4px;
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
             background-color: var(--cyan-check);
             color: #000;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: bold;
             box-shadow: 0 0 8px var(--cyan-check);
             z-index: 10;
@@ -195,7 +198,7 @@
         }
 
         .freeze-title {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             font-weight: bold;
             margin-bottom: 8px;
         }
@@ -203,18 +206,40 @@
         .math-overlay {
             background: rgba(15, 23, 42, 0.95);
             border: 2px solid #a855f7;
-            padding: 15px;
+            padding: 16px;
             color: #fff;
         }
         .side-gold .math-overlay { border-color: #eab308; }
 
-        .math-title { font-size: 0.85rem; color: #cbd5e1; margin-bottom: 4px; }
-        .math-question { font-size: 1.8rem; font-weight: bold; color: #38bdf8; margin-bottom: 8px; letter-spacing: 2px; }
-        .math-status { font-size: 0.8rem; color: #f43f5e; height: 18px; margin-bottom: 8px; }
+        .math-title { font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px; }
+
+        .math-q-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .math-question { font-size: 1.8rem; font-weight: bold; color: #38bdf8; letter-spacing: 1px; }
+
+        .math-input-box {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #facc15;
+            background: #0f172a;
+            padding: 2px 14px;
+            border-radius: 8px;
+            border: 1px solid #38bdf8;
+            min-width: 65px;
+            text-align: center;
+        }
+
+        .math-status { font-size: 0.85rem; color: #cbd5e1; height: 20px; margin-bottom: 8px; }
 
         .numpad {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 6px;
             width: 100%;
         }
@@ -224,8 +249,8 @@
             color: #fff;
             border: none;
             border-radius: 6px;
-            padding: 8px 0;
-            font-size: 1.1rem;
+            padding: 10px 0;
+            font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
         }
@@ -234,6 +259,11 @@
             transform: scale(0.92);
             background: #38bdf8;
             color: #000;
+        }
+
+        .btn-clear {
+            background: #ef4444;
+            color: #fff;
         }
 
         /* 弹窗 */
@@ -313,7 +343,7 @@
 </head>
 <body>
 
-    <!-- 顶部极简栏 -->
+    <!-- 顶部栏 -->
     <header>
         <div class="mode-badge" id="display-mode-text">模式: --</div>
         <div class="timer-box">
@@ -335,22 +365,26 @@
                     <div>连续两次移动错误！</div>
                     <div style="font-size: 1.5rem; font-weight: bold; margin-top: 5px;" id="freeze-timer-purple">2s</div>
                 </div>
-                <!-- 数学锁关遮罩 -->
+                <!-- 数学锁关遮罩 (1-12 乘除法) -->
                 <div class="overlay-layer math-overlay hidden" id="math-purple">
-                    <div class="math-title">🎯 答对解锁下一步 (个位数算术)</div>
-                    <div class="math-question" id="math-q-purple">3 + 4 = ?</div>
-                    <div class="math-status" id="math-status-purple">点击数字选择答案</div>
+                    <div class="math-title">🎯 1-12 乘除法运算解锁</div>
+                    <div class="math-q-row">
+                        <span class="math-question" id="math-q-purple">3 × 4 =</span>
+                        <span class="math-input-box" id="math-input-purple">?</span>
+                    </div>
+                    <div class="math-status" id="math-status-purple">点击数字输入答案</div>
                     <div class="numpad">
-                        <button class="num-btn" onclick="submitMath('purple', 0)">0</button>
-                        <button class="num-btn" onclick="submitMath('purple', 1)">1</button>
-                        <button class="num-btn" onclick="submitMath('purple', 2)">2</button>
-                        <button class="num-btn" onclick="submitMath('purple', 3)">3</button>
-                        <button class="num-btn" onclick="submitMath('purple', 4)">4</button>
-                        <button class="num-btn" onclick="submitMath('purple', 5)">5</button>
-                        <button class="num-btn" onclick="submitMath('purple', 6)">6</button>
-                        <button class="num-btn" onclick="submitMath('purple', 7)">7</button>
-                        <button class="num-btn" onclick="submitMath('purple', 8)">8</button>
-                        <button class="num-btn" onclick="submitMath('purple', 9)">9</button>
+                        <button class="num-btn" onclick="pressMathNum('purple', '1')">1</button>
+                        <button class="num-btn" onclick="pressMathNum('purple', '2')">2</button>
+                        <button class="num-btn" onclick="pressMathNum('purple', '3')">3</button>
+                        <button class="num-btn" onclick="pressMathNum('purple', '4')">4</button>
+                        <button class="num-btn" onclick="pressMathNum('purple', '5')">5</button>
+                        <button class="num-btn" onclick="pressMathNum('purple', '6')">6</button>
+                        <button class="num-btn" onclick="pressMathNum('purple', '7')">7</button>
+                        <button class="num-btn" onclick="pressMathNum('purple', '8')">8</button>
+                        <button class="num-btn" onclick="pressMathNum('purple', '9')">9</button>
+                        <button class="num-btn" onclick="pressMathNum('purple', '0')">0</button>
+                        <button class="num-btn btn-clear" onclick="clearMathNum('purple')">C</button>
                     </div>
                 </div>
             </div>
@@ -367,22 +401,26 @@
                     <div>连续两次移动错误！</div>
                     <div style="font-size: 1.5rem; font-weight: bold; margin-top: 5px;" id="freeze-timer-gold">2s</div>
                 </div>
-                <!-- 数学锁关遮罩 -->
+                <!-- 数学锁关遮罩 (1-12 乘除法) -->
                 <div class="overlay-layer math-overlay hidden" id="math-gold">
-                    <div class="math-title">🎯 答对解锁下一步 (个位数算术)</div>
-                    <div class="math-question" id="math-q-gold">5 - 2 = ?</div>
-                    <div class="math-status" id="math-status-gold">点击数字选择答案</div>
+                    <div class="math-title">🎯 1-12 乘除法运算解锁</div>
+                    <div class="math-q-row">
+                        <span class="math-question" id="math-q-gold">5 × 2 =</span>
+                        <span class="math-input-box" id="math-input-gold">?</span>
+                    </div>
+                    <div class="math-status" id="math-status-gold">点击数字输入答案</div>
                     <div class="numpad">
-                        <button class="num-btn" onclick="submitMath('gold', 0)">0</button>
-                        <button class="num-btn" onclick="submitMath('gold', 1)">1</button>
-                        <button class="num-btn" onclick="submitMath('gold', 2)">2</button>
-                        <button class="num-btn" onclick="submitMath('gold', 3)">3</button>
-                        <button class="num-btn" onclick="submitMath('gold', 4)">4</button>
-                        <button class="num-btn" onclick="submitMath('gold', 5)">5</button>
-                        <button class="num-btn" onclick="submitMath('gold', 6)">6</button>
-                        <button class="num-btn" onclick="submitMath('gold', 7)">7</button>
-                        <button class="num-btn" onclick="submitMath('gold', 8)">8</button>
-                        <button class="num-btn" onclick="submitMath('gold', 9)">9</button>
+                        <button class="num-btn" onclick="pressMathNum('gold', '1')">1</button>
+                        <button class="num-btn" onclick="pressMathNum('gold', '2')">2</button>
+                        <button class="num-btn" onclick="pressMathNum('gold', '3')">3</button>
+                        <button class="num-btn" onclick="pressMathNum('gold', '4')">4</button>
+                        <button class="num-btn" onclick="pressMathNum('gold', '5')">5</button>
+                        <button class="num-btn" onclick="pressMathNum('gold', '6')">6</button>
+                        <button class="num-btn" onclick="pressMathNum('gold', '7')">7</button>
+                        <button class="num-btn" onclick="pressMathNum('gold', '8')">8</button>
+                        <button class="num-btn" onclick="pressMathNum('gold', '9')">9</button>
+                        <button class="num-btn" onclick="pressMathNum('gold', '0')">0</button>
+                        <button class="num-btn btn-clear" onclick="clearMathNum('gold')">C</button>
                     </div>
                 </div>
             </div>
@@ -418,9 +456,8 @@
                 </select>
             </div>
 
-            <!-- 本地临时上传补充 -->
             <div style="margin: 15px 0; border-top: 1px solid #334155; padding-top: 12px; text-align: left;">
-                <label style="font-size: 0.8rem; color: #94a3b8;">本地上传临时图片 (无需代码修改):</label>
+                <label style="font-size: 0.8rem; color: #94a3b8;">本地上传临时图片 (无需修改代码):</label>
                 <input type="file" id="local-img-input" accept="image/png, image/jpeg, image/jpg" style="display:none;" onchange="handleLocalUpload(event)">
                 <button class="btn-secondary" onclick="document.getElementById('local-img-input').click()">📁 选择文件添加并使用</button>
             </div>
@@ -439,6 +476,10 @@
     </div>
 
     <script>
+        // 背景音乐加载
+        const bgm = new Audio('bgm.mp3');
+        bgm.loop = true;
+
         // 预设默认文字/图片降级题库
         const DEFAULT_HANZI = ["福", "龙", "胜", "智", "勇", "华", "瑞", "雅", "德", "春"];
 
@@ -453,13 +494,12 @@
         let githubHanziImages = [];
         let githubPictureImages = [];
 
-        // 玩家独立状态
+        // 玩家状态数据
         let players = {
-            purple: { board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null },
-            gold: { board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null }
+            purple: { board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null, inputVal: "" },
+            gold: { board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null, inputVal: "" }
         };
 
-        // 页面加载完成后，自动扫描 GitHub 仓库中的 images/ 文件夹
         window.addEventListener('DOMContentLoaded', () => {
             fetchGitHubRepositoryImages();
         });
@@ -478,7 +518,7 @@
                         .filter(f => f.type === 'file' && /\.(png|jpe?g)$/i.test(f.name))
                         .map(f => encodeURI(f.download_url));
                 }
-            } catch (e) { console.log("扫描 images/hanzi 失败，使用默认文字处理"); }
+            } catch (e) {}
 
             // 2. 扫描 images/picture/ 文件夹
             try {
@@ -489,16 +529,15 @@
                         .filter(f => f.type === 'file' && /\.(png|jpe?g)$/i.test(f.name))
                         .map(f => encodeURI(f.download_url));
                 }
-            } catch (e) { console.log("扫描 images/picture 失败"); }
+            } catch (e) {}
 
-            // 3. 扫描根目录与 images/ 直属目录（兼容旧存放模式，如 糖.png）
+            // 3. 扫描 images/ 根目录 (兼容旧路径)
             try {
                 const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/images`);
                 if (res.ok) {
                     const files = await res.json();
                     files.forEach(f => {
                         if (f.type === 'file' && /\.(png|jpe?g)$/i.test(f.name)) {
-                            // 若没在子文件夹，默认归类入图片库与汉字库
                             const url = encodeURI(f.download_url);
                             if (!githubHanziImages.includes(url)) githubHanziImages.push(url);
                             if (!githubPictureImages.includes(url)) githubPictureImages.push(url);
@@ -508,13 +547,12 @@
             } catch (e) {}
         }
 
-        // 显示设置菜单
         function showSetup() {
+            bgm.pause();
             document.getElementById("result-modal").classList.add("hidden");
             document.getElementById("setup-modal").classList.remove("hidden");
         }
 
-        // 本地文件上传支持
         function handleLocalUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -532,22 +570,24 @@
             reader.readAsDataURL(file);
         }
 
-        // 开始游戏
+        // 开始游戏并自动播放 BGM
         function startGame() {
             gameMode = document.getElementById("select-mode").value;
             gridSize = parseInt(document.getElementById("select-grid").value);
             timeLimit = parseInt(document.getElementById("select-time").value);
 
+            // 播放背景音乐 bgm.mp3
+            bgm.currentTime = 0;
+            bgm.play().catch(err => console.log("BGM 自动播放提示:", err));
+
             document.getElementById("setup-modal").classList.add("hidden");
             document.getElementById("display-mode-text").innerText = `模式: ${gameMode === 'hanzi' ? '汉字拼图' : '图片拼图'}`;
 
             if (gameMode === 'hanzi') {
-                // 如果 GitHub images/hanzi/ 有图片，优先随机加载
                 if (githubHanziImages.length > 0) {
                     const randomImgUrl = githubHanziImages[Math.floor(Math.random() * githubHanziImages.length)];
                     loadCustomImageUrl(randomImgUrl, () => initGameBoards());
                 } else {
-                    // 否则自动根据汉字渲染图片
                     const randomChar = DEFAULT_HANZI[Math.floor(Math.random() * DEFAULT_HANZI.length)];
                     renderTextCanvas(randomChar, (url) => {
                         imgDataUrl = url;
@@ -555,12 +595,10 @@
                     });
                 }
             } else {
-                // 图片模式
                 if (githubPictureImages.length > 0) {
                     const randomImgUrl = githubPictureImages[Math.floor(Math.random() * githubPictureImages.length)];
                     loadCustomImageUrl(randomImgUrl, () => initGameBoards());
                 } else {
-                    // 若无图片，自动生成彩色图形提示
                     renderFallbackPictureCanvas("图片模式", (url) => {
                         imgDataUrl = url;
                         initGameBoards();
@@ -569,23 +607,22 @@
             }
         }
 
-        // 初始化棋盘
         function initGameBoards() {
             initPlayerBoard('purple');
             initPlayerBoard('gold');
             startTimer();
         }
 
-        // 将外部图片链接转为 HTML Canvas 图片
+        // 转为 384px 高清 Canvas 画布（放大 20%）
         function loadCustomImageUrl(url, callback) {
             const img = new Image();
             img.crossOrigin = "Anonymous";
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                canvas.width = 320;
-                canvas.height = 320;
+                canvas.width = 384;
+                canvas.height = 384;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, 320, 320);
+                ctx.drawImage(img, 0, 0, 384, 384);
                 imgDataUrl = canvas.toDataURL();
                 callback();
             };
@@ -598,37 +635,35 @@
             img.src = url;
         }
 
-        // 渲染文本图片 Canvas
         function renderTextCanvas(char, callback) {
             const canvas = document.createElement('canvas');
-            canvas.width = 320; canvas.height = 320;
+            canvas.width = 384; canvas.height = 384;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = "#1e293b"; ctx.fillRect(0, 0, 320, 320);
+            ctx.fillStyle = "#1e293b"; ctx.fillRect(0, 0, 384, 384);
             ctx.strokeStyle = "#334155"; ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(160, 0); ctx.lineTo(160, 320);
-            ctx.moveTo(0, 160); ctx.lineTo(320, 160);
+            ctx.moveTo(192, 0); ctx.lineTo(192, 384);
+            ctx.moveTo(0, 192); ctx.lineTo(384, 192);
             ctx.stroke();
             ctx.fillStyle = "#f8fafc";
-            ctx.font = 'bold 220px "Kaiti", "STKaiti", serif';
+            ctx.font = 'bold 260px "Kaiti", "STKaiti", serif';
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(char, 160, 170);
+            ctx.fillText(char, 192, 204);
             callback(canvas.toDataURL());
         }
 
         function renderFallbackPictureCanvas(text, callback) {
             const canvas = document.createElement('canvas');
-            canvas.width = 320; canvas.height = 320;
+            canvas.width = 384; canvas.height = 384;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = "#0284c7"; ctx.fillRect(0, 0, 320, 320);
+            ctx.fillStyle = "#0284c7"; ctx.fillRect(0, 0, 384, 384);
             ctx.fillStyle = "#ffffff";
-            ctx.font = 'bold 36px sans-serif';
+            ctx.font = 'bold 42px sans-serif';
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(text, 160, 160);
+            ctx.fillText(text, 192, 192);
             callback(canvas.toDataURL());
         }
 
-        // 初始化单人棋盘
         function initPlayerBoard(p) {
             const boardEl = document.getElementById(`board-${p}`);
             boardEl.innerHTML = "";
@@ -646,6 +681,7 @@
             players[p].consecutiveErrors = 0;
             players[p].isFrozen = false;
             players[p].isMathLocked = false;
+            players[p].inputVal = "";
 
             document.getElementById(`freeze-${p}`).classList.add("hidden");
             document.getElementById(`math-${p}`).classList.add("hidden");
@@ -653,7 +689,6 @@
             renderBoardTiles(p);
         }
 
-        // 渲染 Tile 节点
         function renderBoardTiles(p) {
             const boardEl = document.getElementById(`board-${p}`);
             boardEl.innerHTML = "";
@@ -674,7 +709,7 @@
                 tile.style.backgroundSize = `${gridSize * 100}% ${gridSize * 100}%`;
                 tile.style.backgroundPosition = `${col * percentage}% ${row * percentage}%`;
 
-                // ✅ 规则：正确位置加青色勾勾
+                // 位置正确显示青色对勾
                 if (tileIdx === currentPos) {
                     const check = document.createElement("div");
                     check.className = "check-mark";
@@ -736,7 +771,6 @@
                 players[p].consecutiveErrors++;
                 renderBoardTiles(p);
 
-                // ✅ 规则：连续两次拖曳错误冻结 2 秒
                 if (players[p].consecutiveErrors >= 2) {
                     triggerFreeze(p);
                 }
@@ -750,7 +784,7 @@
             }
         }
 
-        // 冻结 2 秒处理
+        // 冰冻 2 秒处理
         function triggerFreeze(p) {
             players[p].isFrozen = true;
             players[p].consecutiveErrors = 0;
@@ -777,78 +811,81 @@
             }, 1000);
         }
 
-        // 触发数学算术锁关题
+        // 触发 1-12 乘除法锁关题
         function triggerMathChallenge(p) {
             players[p].isMathLocked = true;
-            players[p].currentMath = generateSingleDigitMath();
+            players[p].inputVal = "";
+            players[p].currentMath = generateMultiplicationDivisionMath();
 
             const mathOverlay = document.getElementById(`math-${p}`);
             const mathQ = document.getElementById(`math-q-${p}`);
+            const mathInput = document.getElementById(`math-input-${p}`);
             const mathStatus = document.getElementById(`math-status-${p}`);
 
-            mathQ.innerText = players[p].currentMath.q;
-            mathStatus.innerText = "点击数字选择答案";
+            mathQ.innerText = `${players[p].currentMath.q} =`;
+            mathInput.innerText = "?";
+            mathStatus.innerText = "点击数字输入答案";
             mathStatus.style.color = "#cbd5e1";
 
             mathOverlay.classList.remove("hidden");
             renderBoardTiles(p);
         }
 
-        // 生成个位数加减乘除题（答案限定 0-9）
-        function generateSingleDigitMath() {
-            const ops = ['+', '-', '*', '/'];
-            const op = ops[Math.floor(Math.random() * ops.length)];
-            let num1, num2, answer;
+        // 生成 1 至 12 的乘法与除法题
+        function generateMultiplicationDivisionMath() {
+            const isMultiplication = Math.random() < 0.5;
+            const a = Math.floor(Math.random() * 12) + 1; // 1..12
+            const b = Math.floor(Math.random() * 12) + 1; // 1..12
 
-            if (op === '+') {
-                answer = Math.floor(Math.random() * 10);
-                num1 = Math.floor(Math.random() * (answer + 1));
-                num2 = answer - num1;
-            } else if (op === '-') {
-                num1 = Math.floor(Math.random() * 10);
-                num2 = Math.floor(Math.random() * (num1 + 1));
-                answer = num1 - num2;
-            } else if (op === '*') {
-                const pairs = [];
-                for (let a = 0; a <= 9; a++) {
-                    for (let b = 0; b <= 9; b++) {
-                        if (a * b <= 9) pairs.push([a, b]);
-                    }
-                }
-                const pair = pairs[Math.floor(Math.random() * pairs.length)];
-                num1 = pair[0]; num2 = pair[1]; answer = num1 * num2;
-            } else if (op === '/') {
-                answer = Math.floor(Math.random() * 10);
-                num2 = Math.floor(Math.random() * 9) + 1;
-                num1 = answer * num2;
+            if (isMultiplication) {
+                return { q: `${a} × ${b}`, a: a * b };
+            } else {
+                const product = a * b;
+                return { q: `${product} ÷ ${a}`, a: b };
             }
-
-            const symbols = { '+': '+', '-': '-', '*': '×', '/': '÷' };
-            return { q: `${num1} ${symbols[op]} ${num2} = ?`, a: answer };
         }
 
-        // 验证数学题答案
-        function submitMath(p, selectedNum) {
+        // 智能数字输入控制（根据答案位数自动判对错）
+        function pressMathNum(p, digit) {
             if (!players[p].isMathLocked) return;
 
-            const mathStatus = document.getElementById(`math-status-${p}`);
+            players[p].inputVal += digit;
+            document.getElementById(`math-input-${p}`).innerText = players[p].inputVal;
 
-            if (selectedNum === players[p].currentMath.a) {
-                players[p].isMathLocked = false;
-                document.getElementById(`math-${p}`).classList.add("hidden");
-                renderBoardTiles(p);
+            const targetStr = players[p].currentMath.a.toString();
 
-                if (checkArrayWin(players[p].board)) {
-                    endGame(p);
+            // 当输入长度等于目标答案位数时进行验证
+            if (players[p].inputVal.length === targetStr.length) {
+                if (players[p].inputVal === targetStr) {
+                    // 答对解锁
+                    players[p].isMathLocked = false;
+                    document.getElementById(`math-${p}`).classList.add("hidden");
+                    renderBoardTiles(p);
+
+                    if (checkArrayWin(players[p].board)) {
+                        endGame(p);
+                    }
+                } else {
+                    // 答错惩罚换题
+                    const mathStatus = document.getElementById(`math-status-${p}`);
+                    mathStatus.innerText = "❌ 答案错误！惩罚多做一题！";
+                    mathStatus.style.color = "#f43f5e";
+
+                    players[p].inputVal = "";
+                    players[p].currentMath = generateMultiplicationDivisionMath();
+
+                    setTimeout(() => {
+                        document.getElementById(`math-q-${p}`).innerText = `${players[p].currentMath.q} =`;
+                        document.getElementById(`math-input-${p}`).innerText = "?";
+                    }, 400);
                 }
-            } else {
-                mathStatus.innerText = "❌ 答案错误！惩罚多做一题！";
-                mathStatus.style.color = "#f43f5e";
-                players[p].currentMath = generateSingleDigitMath();
-                setTimeout(() => {
-                    document.getElementById(`math-q-${p}`).innerText = players[p].currentMath.q;
-                }, 300);
             }
+        }
+
+        function clearMathNum(p) {
+            if (!players[p].isMathLocked) return;
+            players[p].inputVal = "";
+            document.getElementById(`math-input-${p}`).innerText = "?";
         }
 
         function checkArrayWin(arr) {
@@ -858,7 +895,6 @@
             return true;
         }
 
-        // 计时器控制
         function startTimer() {
             clearInterval(timerInterval);
             timeRemaining = timeLimit;
@@ -896,8 +932,12 @@
             }
         }
 
+        // 结束游戏并暂停 BGM
         function endGame(winner, customMessage = "") {
             clearInterval(timerInterval);
+
+            // 胜负出现，暂停背景音乐
+            bgm.pause();
 
             const resultModal = document.getElementById("result-modal");
             const winnerTitle = document.getElementById("winner-title");
