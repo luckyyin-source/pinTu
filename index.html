@@ -106,11 +106,11 @@
             letter-spacing: 1px;
         }
 
-        /* 拼图网格容器（再放大40% -> 538px） */
+        /* 拼图网格容器（已放大20% -> 384px） */
         .board-wrapper {
             position: relative;
-            width: 538px;
-            height: 538px;
+            width: 384px;
+            height: 384px;
             max-width: 90vw;
             max-height: 90vw;
         }
@@ -156,19 +156,19 @@
         /* 青色正确对勾 */
         .check-mark {
             position: absolute;
-            top: 6px;
-            right: 6px;
-            width: 28px;
-            height: 28px;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
             background-color: var(--cyan-check);
             color: #000;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 15px;
             font-weight: bold;
-            box-shadow: 0 0 10px var(--cyan-check);
+            box-shadow: 0 0 8px var(--cyan-check);
             z-index: 10;
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
@@ -198,7 +198,7 @@
         }
 
         .freeze-title {
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             font-weight: bold;
             margin-bottom: 8px;
         }
@@ -206,41 +206,41 @@
         .math-overlay {
             background: rgba(15, 23, 42, 0.95);
             border: 2px solid #a855f7;
-            padding: 20px;
+            padding: 16px;
             color: #fff;
         }
         .side-gold .math-overlay { border-color: #eab308; }
 
-        .math-title { font-size: 1rem; color: #cbd5e1; margin-bottom: 8px; }
+        .math-title { font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px; }
 
         .math-q-row {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: 10px;
+            margin-bottom: 8px;
         }
 
-        .math-question { font-size: 2.2rem; font-weight: bold; color: #38bdf8; letter-spacing: 1px; }
+        .math-question { font-size: 1.8rem; font-weight: bold; color: #38bdf8; letter-spacing: 1px; }
 
         .math-input-box {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             font-weight: bold;
             color: #facc15;
             background: #0f172a;
-            padding: 2px 18px;
+            padding: 2px 14px;
             border-radius: 8px;
             border: 1px solid #38bdf8;
-            min-width: 80px;
+            min-width: 65px;
             text-align: center;
         }
 
-        .math-status { font-size: 0.95rem; color: #cbd5e1; height: 22px; margin-bottom: 12px; }
+        .math-status { font-size: 0.85rem; color: #cbd5e1; height: 20px; margin-bottom: 8px; }
 
         .numpad {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
-            gap: 8px;
+            gap: 6px;
             width: 100%;
         }
 
@@ -248,9 +248,9 @@
             background: #334155;
             color: #fff;
             border: none;
-            border-radius: 8px;
-            padding: 12px 0;
-            font-size: 1.3rem;
+            border-radius: 6px;
+            padding: 10px 0;
+            font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
         }
@@ -363,7 +363,7 @@
                 <div class="overlay-layer freeze-overlay hidden" id="freeze-purple">
                     <div class="freeze-title">❄️ 冰冻 2 秒</div>
                     <div>连续两次移动错误！</div>
-                    <div style="font-size: 1.8rem; font-weight: bold; margin-top: 5px;" id="freeze-timer-purple">2s</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; margin-top: 5px;" id="freeze-timer-purple">2s</div>
                 </div>
                 <!-- 数学锁关遮罩 (1-12 乘除法) -->
                 <div class="overlay-layer math-overlay hidden" id="math-purple">
@@ -399,7 +399,7 @@
                 <div class="overlay-layer freeze-overlay hidden" id="freeze-gold">
                     <div class="freeze-title">❄️ 冰冻 2 秒</div>
                     <div>连续两次移动错误！</div>
-                    <div style="font-size: 1.8rem; font-weight: bold; margin-top: 5px;" id="freeze-timer-gold">2s</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; margin-top: 5px;" id="freeze-timer-gold">2s</div>
                 </div>
                 <!-- 数学锁关遮罩 (1-12 乘除法) -->
                 <div class="overlay-layer math-overlay hidden" id="math-gold">
@@ -613,16 +613,16 @@
             startTimer();
         }
 
-        // 转为 538px 高清 Canvas 画布（再放大 40%）
+        // 转为 384px 高清 Canvas 画布（放大 20%）
         function loadCustomImageUrl(url, callback) {
             const img = new Image();
             img.crossOrigin = "Anonymous";
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                canvas.width = 538;
-                canvas.height = 538;
+                canvas.width = 384;
+                canvas.height = 384;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, 538, 538);
+                ctx.drawImage(img, 0, 0, 384, 384);
                 imgDataUrl = canvas.toDataURL();
                 callback();
             };
@@ -637,30 +637,30 @@
 
         function renderTextCanvas(char, callback) {
             const canvas = document.createElement('canvas');
-            canvas.width = 538; canvas.height = 538;
+            canvas.width = 384; canvas.height = 384;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = "#1e293b"; ctx.fillRect(0, 0, 538, 538);
+            ctx.fillStyle = "#1e293b"; ctx.fillRect(0, 0, 384, 384);
             ctx.strokeStyle = "#334155"; ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(269, 0); ctx.lineTo(269, 538);
-            ctx.moveTo(0, 269); ctx.lineTo(538, 269);
+            ctx.moveTo(192, 0); ctx.lineTo(192, 384);
+            ctx.moveTo(0, 192); ctx.lineTo(384, 192);
             ctx.stroke();
             ctx.fillStyle = "#f8fafc";
-            ctx.font = 'bold 360px "Kaiti", "STKaiti", serif';
+            ctx.font = 'bold 260px "Kaiti", "STKaiti", serif';
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(char, 269, 285);
+            ctx.fillText(char, 192, 204);
             callback(canvas.toDataURL());
         }
 
         function renderFallbackPictureCanvas(text, callback) {
             const canvas = document.createElement('canvas');
-            canvas.width = 538; canvas.height = 538;
+            canvas.width = 384; canvas.height = 384;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = "#0284c7"; ctx.fillRect(0, 0, 538, 538);
+            ctx.fillStyle = "#0284c7"; ctx.fillRect(0, 0, 384, 384);
             ctx.fillStyle = "#ffffff";
-            ctx.font = 'bold 60px sans-serif';
+            ctx.font = 'bold 42px sans-serif';
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(text, 269, 269);
+            ctx.fillText(text, 192, 192);
             callback(canvas.toDataURL());
         }
 
@@ -854,8 +854,10 @@
 
             const targetStr = players[p].currentMath.a.toString();
 
+            // 当输入长度等于目标答案位数时进行验证
             if (players[p].inputVal.length === targetStr.length) {
                 if (players[p].inputVal === targetStr) {
+                    // 答对解锁
                     players[p].isMathLocked = false;
                     document.getElementById(`math-${p}`).classList.add("hidden");
                     renderBoardTiles(p);
@@ -864,6 +866,7 @@
                         endGame(p);
                     }
                 } else {
+                    // 答错惩罚换题
                     const mathStatus = document.getElementById(`math-status-${p}`);
                     mathStatus.innerText = "❌ 答案错误！惩罚多做一题！";
                     mathStatus.style.color = "#f43f5e";
