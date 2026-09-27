@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>双人拼图大决斗 - 紫金风暴</title>
+    <style>
+        :root {
+            --purple-main: #c084fc;
+            --purple-glow: rgba(192, 132, 252, 0.5);
+            --purple-bg: #140727;
+            --purple-card: #2e1065;
+
+            --gold-main: #fbbf24;
+            --gold-glow: rgba(251, 191, 36, 0.5);
+            --gold-bg: #1c1503;
+            --gold-card: #713f12;
+
+            --cyan-check: #06b6d4;
+            --bg-dark: #0b0f19;
+            --panel-bg: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            height: 70px;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            z-index: 20;
+            backdrop-filter: blur(8px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .game-title {
+            font-size: 1.25rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            background: linear-gradient(135deg, var(--purple-main), var(--gold-main));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .mode-badge {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .timer-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 6px 18px;
+            border-radius: 12px;
+        }
+
+        .timer-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+        .timer-val {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #f43f5e;
+            font-family: monospace;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .battlefield {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .player-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        /* 紫队 */
+        .side-purple {
+            background: radial-gradient(circle at 30% 50%, #2e1065 0%, var(--purple-bg) 100%);
+            border-right: 2px solid rgba(255, 255, 255, 0.08);
+        }
+        .side-purple .player-tag {
+            color: var(--purple-main);
+            text-shadow: 0 0 12px var(--purple-glow);
+        }
+
+        /* 金队 */
+        .side-gold {
+            background: radial-gradient(circle at 70% 50%, #54420a 0%, var(--gold-bg) 100%);
+        }
+        .side-gold .player-tag {
+            color: var(--gold-main);
+            text-shadow: 0 0 12px var(--gold-glow);
+        }
+
+        .player-tag {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .board-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            max-width: 80vw;
+            max-height: 80vw;
+        }
+
+        .puzzle-grid {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .side-purple .puzzle-grid { border: 2px solid var(--purple-main); box-shadow: 0 0 20px rgba(192, 132, 252, 0.2); }
+        .side-gold .puzzle-grid { border: 2px solid var(--gold-main); box-shadow: 0 0 20px rgba(251, 191, 36, 0.2); }
+
+        .tile {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            cursor: grab;
+            background-repeat: no-repeat;
+            position: relative;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+            transition: transform 0.15s ease, opacity 0.15s ease;
+            touch-action: none;
+        }
+
+        .tile:active {
+            cursor: grabbing;
+            transform: scale(0.96);
+            z-index: 10;
+        }
+
+        .side-purple .tile { border: 1px solid rgba(192, 132, 252, 0.4); }
+        .side-gold .tile { border: 1px solid rgba(251, 191, 36, 0.4); }
+
+        .tile.dragging {
+            opacity: 0.25;
+        }
+
+        /* 正确位置青色勾勾 (✓) */
+        .check-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 22px;
+            height: 22px;
+            background-color: var(--cyan-check);
+            color: #042f2e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 900;
+            box-shadow: 0 0 10px var(--cyan-check);
+            z-index: 12;
+            animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .overlay-mask {
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .freeze-mask {
+            background: rgba(14, 165, 233, 0.88);
+            border: 2px solid #38bdf8;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .freeze-icon { font-size: 2.2rem; margin-bottom: 4px; }
+        .freeze-text { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+        .freeze-sec { font-size: 2.2rem; font-weight: 900; font-family: monospace; }
+
+        .math-mask {
+            background: rgba(15, 23, 42, 0.96);
+            padding: 16px;
+            text-align: center;
+        }
+
+        .side-purple .math-mask { border: 2px solid var(--purple-main); }
+        .side-gold .math-mask { border: 2px solid var(--gold-main); }
+
+        .math-head { font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px; font-weight: 600; }
+        .math-expr { font-size: 2rem; font-weight: 900; color: #38bdf8; margin-bottom: 6px; font-family: monospace; }
+        .math-msg { font-size: 0.8rem; color: #f43f5e; height: 18px; margin-bottom: 10px; font-weight: 600; }
+
+        /* Numpad 0-9 */
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            width: 100%;
+        }
+
+        .num-key {
+            background: #334155;
+            color: #f8fafc;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 0;
+            font-size: 1.2rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #1e293b;
+            transition: all 0.1s;
+        }
+
+        .num-key:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #1e293b;
+            background: #38bdf8;
+            color: #0f172a;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 15, 25, 0.88);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: var(--panel-bg);
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 26px;
+            width: 440px;
+            max-width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--purple-main), var(--gold-main));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .form-row {
+            margin-bottom: 16px;
+        }
+
+        .form-row label {
+            display: block;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .form-row select, .form-row input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        /* 自定义图片管理区域 */
+        .image-manager-box {
+            background: #0f172a;
+            border: 1px dashed #475569;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .image-grid-preview {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .img-thumb {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 2px solid transparent;
+        }
+
+        .img-thumb.selected {
+            border-color: #38bdf8;
+        }
+
+        .img-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .img-thumb .btn-del {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(244, 63, 94, 0.9);
+            color: #fff;
+            border: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-upload {
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+            background: #334155;
+            color: #38bdf8;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-upload:hover {
+            background: #475569;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--purple-main), var(--gold-main));
+            color: #0f172a;
+            font-size: 1.1rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.15s;
+        }
+
+        .btn-primary:active { transform: scale(0.98); }
+
+        .hidden { display: none !important; }
+
+        .winner-title {
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .win-p { color: var(--purple-main); text-shadow: 0 0 15px var(--purple-glow); }
+        .win-g { color: var(--gold-main); text-shadow: 0 0 15px var(--gold-glow); }
+        .win-d { color: #38bdf8; }
+
+        .winner-preview {
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 15px auto;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            border: 2px solid #334155;
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <span class="game-title">⚔️ 拼图大决斗</span>
+            <span class="mode-badge" id="header-mode-badge">汉字模式</span>
+        </div>
+        <div class="timer-badge">
+            <span class="timer-label">TIME</span>
+            <span class="timer-val" id="header-timer">60</span>
+        </div>
+    </header>
+
+    <div class="battlefield">
+        <!-- 紫队战场 -->
+        <div class="player-side side-purple">
+            <div class="player-tag">💜 紫队</div>
+            <div class="board-container">
+                <div class="puzzle-grid" id="grid-purple"></div>
+                
+                <!-- 冰冻惩罚遮罩 -->
+                <div class="overlay-mask freeze-mask hidden" id="freeze-purple">
+                    <div class="freeze-icon">❄️</div>
+                    <div class="freeze-text">连续2次错误 冻结中</div>
+                    <div class="freeze-sec" id="freeze-sec-purple">2s</div>
+                </div>
+
+                <!-- 数学答题锁关遮罩 -->
+                <div class="overlay-mask math-mask hidden" id="math-purple">
+                    <div class="math-head">🎯 正确解锁题</div>
+                    <div class="math-expr" id="math-expr-purple">3 + 4 = ?</div>
+                    <div class="math-msg" id="math-msg-purple">点击按钮解答</div>
+                    <div class="numpad-grid">
+                        <button class="num-key" onclick="handleMathInput('purple', 0)">0</button>
+                        <button class="num-key" onclick="handleMathInput('purple', 1)">1</button>
+                        <button class="num-key" onclick="handleMathInput('purple', 2)">2</button>
+                        <button class="num-key" onclick="handleMathInput('purple', 3)">3</button>
+                        <button class="num-key" onclick="handleMathInput('purple', 4)">4</button>
+                        <button class="num-key" onclick="handleMathInput('purple', 5)">5</button>
+                        <button class="num-key" onclick="handleMathInput('purple', 6)">6</button>
+                        <button class="num-key" onclick="handleMathInput('purple', 7)">7</button>
+                        <button class="num-key" onclick="handleMathInput('purple', 8)">8</button>
+                        <button class="num-key" onclick="handleMathInput('purple', 9)">9</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 金队战场 -->
+        <div class="player-side side-gold">
+            <div class="player-tag">👑 金队</div>
+            <div class="board-container">
+                <div class="puzzle-grid" id="grid-gold"></div>
+
+                <!-- 冰冻惩罚遮罩 -->
+                <div class="overlay-mask freeze-mask hidden" id="freeze-gold">
+                    <div class="freeze-icon">❄️</div>
+                    <div class="freeze-text">连续2次错误 冻结中</div>
+                    <div class="freeze-sec" id="freeze-sec-gold">2s</div>
+                </div>
+
+                <!-- 数学答题锁关遮罩 -->
+                <div class="overlay-mask math-mask hidden" id="math-gold">
+                    <div class="math-head">🎯 正确解锁题</div>
+                    <div class="math-expr" id="math-expr-gold">5 - 2 = ?</div>
+                    <div class="math-msg" id="math-msg-gold">点击按钮解答</div>
+                    <div class="numpad-grid">
+                        <button class="num-key" onclick="handleMathInput('gold', 0)">0</button>
+                        <button class="num-key" onclick="handleMathInput('gold', 1)">1</button>
+                        <button class="num-key" onclick="handleMathInput('gold', 2)">2</button>
+                        <button class="num-key" onclick="handleMathInput('gold', 3)">3</button>
+                        <button class="num-key" onclick="handleMathInput('gold', 4)">4</button>
+                        <button class="num-key" onclick="handleMathInput('gold', 5)">5</button>
+                        <button class="num-key" onclick="handleMathInput('gold', 6)">6</button>
+                        <button class="num-key" onclick="handleMathInput('gold', 7)">7</button>
+                        <button class="num-key" onclick="handleMathInput('gold', 8)">8</button>
+                        <button class="num-key" onclick="handleMathInput('gold', 9)">9</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="modal-setup">
+        <div class="modal-box">
+            <div class="modal-title">⚔️ 游戏设置</div>
+            
+            <div class="form-row">
+                <label>游戏模式</label>
+                <select id="cfg-mode" onchange="toggleModeSelect()">
+                    <option value="hanzi" selected>汉字模式</option>
+                    <option value="image">图片模式</option>
+                </select>
+            </div>
+
+            <!-- 图片模式专属下拉框与上传器 -->
+            <div class="form-row hidden" id="row-image-select">
+                <label>选择图片题库</label>
+                <select id="cfg-image-list"></select>
+
+                <div class="image-manager-box">
+                    <label class="btn-upload">
+                        📁 上传本地图片 (.png, .jpg, .jpeg)
+                        <input type="file" id="file-uploader" accept="image/png, image/jpeg, image/jpg" multiple style="display: none;" onchange="handleFileUpload(event)">
+                    </label>
+                    <div class="image-grid-preview" id="custom-img-preview"></div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>拼图规格</label>
+                <select id="cfg-grid">
+                    <option value="2">2 × 2 (入门)</option>
+                    <option value="3" selected>3 × 3 (九宫格)</option>
+                    <option value="4">4 × 4 (高手)</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label>时间限制</label>
+                <select id="cfg-time">
+                    <option value="30">30 秒</option>
+                    <option value="60" selected>60 秒</option>
+                    <option value="90">90 秒</option>
+                    <option value="0">无时间限制</option>
+                </select>
+            </div>
+
+            <button class="btn-primary" onclick="launchGame()">开始决斗</button>
+        </div>
+    </div>
+
+    <div class="modal-backdrop hidden" id="modal-result">
+        <div class="modal-box" style="text-align: center;">
+            <div class="winner-title" id="result-winner-title">胜负已分</div>
+            <div class="winner-preview" id="result-preview"></div>
+            <p id="result-desc" style="color: #94a3b8; margin-bottom: 20px; font-size: 0.9rem;"></p>
+            <button class="btn-primary" onclick="reopenSetup()">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. 默认汉字字符集 (无拼音，无提示)
+        const HANZI_LIST = ["福", "龙", "胜", "智", "勇", "华", "瑞", "雅", "德", "春", "威", "光", "星", "耀"];
+
+        // 2. 默认内置备用生成图片（确保未上传图片时依然完美运行）
+        let imageLibrary = [
+            { id: 'default_1', name: '预设图1', url: createGradientDataUrl('⚡ 极速对决', '#3b82f6', '#8b5cf6') },
+            { id: 'default_2', name: '预设图2', url: createGradientDataUrl('🔥 王者风范', '#f59e0b', '#ef4444') }
+        ];
+
+        let selectedImageObj = null;
+        let gameMode = 'hanzi';
+        let gridSize = 3;
+        let timeLimit = 60;
+        let timerInterval = null;
+        let timeRemaining = 0;
+        let activeDataUrl = '';
+
+        // 双人独立状态
+        let players = {
+            purple: { board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null },
+            gold: { board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLocalStorageImages();
+            fetchImagesJson();
+            refreshImagePreviewGrid();
+        });
+
+        // 产生渐变色 Canvas 占位图
+        function createGradientDataUrl(text, c1, c2) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 320; canvas.height = 320;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 320, 320);
+            grad.addColorStop(0, c1);
+            grad.addColorStop(1, c2);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 320, 320);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 36px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 160, 160);
+            return canvas.toDataURL();
+        }
+
+        // 读取 LocalStorage 自定义图片
+        function loadLocalStorageImages() {
+            try {
+                const stored = localStorage.getItem('puzzle_custom_images');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    parsed.forEach(img => {
+                        if (!imageLibrary.some(i => i.id === img.id)) {
+                            imageLibrary.push(img);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('LocalStorage access restricted', e);
+            }
+        }
+
+        // 尝试从仓库根目录 images.json 读取（部署至 GitHub 时自动抓取）
+        function fetchImagesJson() {
+            fetch('images.json')
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        data.forEach((path, idx) => {
+                            const name = path.split('/').pop();
+                            if (!imageLibrary.some(i => i.url === path)) {
+                                imageLibrary.push({ id: `json_${idx}`, name: name, url: path });
+                            }
+                        });
+                        populateImageDropdown();
+                        refreshImagePreviewGrid();
+                    }
+                })
+                .catch(() => { /* 忽略无 images.json 情况 */ });
+        }
+
+        // 拖拽/上传本地文件
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            Array.from(files).forEach(file => {
+                if (!file.type.match('image.*')) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const newImg = {
+                        id: 'custom_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                        name: file.name,
+                        url: e.target.result
+                    };
+                    imageLibrary.push(newImg);
+                    saveCustomImagesToStorage();
+                    populateImageDropdown();
+                    refreshImagePreviewGrid();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function saveCustomImagesToStorage() {
+            try {
+                const customOnly = imageLibrary.filter(i => i.id.startsWith('custom_'));
+                localStorage.setItem('puzzle_custom_images', JSON.stringify(customOnly));
+            } catch (e) {
+                alert('图片存储容量过大，建议上传更小的图片文件。');
+            }
+        }
+
+        function deleteCustomImage(id, e) {
+            e.stopPropagation();
+            imageLibrary = imageLibrary.filter(i => i.id !== id);
+            saveCustomImagesToStorage();
+            populateImageDropdown();
+            refreshImagePreviewGrid();
+        }
+
+        function toggleModeSelect() {
+            const mode = document.getElementById('cfg-mode').value;
+            const imgRow = document.getElementById('row-image-select');
+            if (mode === 'image') {
+                imgRow.classList.remove('hidden');
+                populateImageDropdown();
+                refreshImagePreviewGrid();
+            } else {
+                imgRow.classList.add('hidden');
+            }
+        }
+
+        function populateImageDropdown() {
+            const select = document.getElementById('cfg-image-list');
+            select.innerHTML = '';
+            imageLibrary.forEach((img, idx) => {
+                const opt = document.createElement('option');
+                opt.value = img.id;
+                opt.innerText = img.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function refreshImagePreviewGrid() {
+            const container = document.getElementById('custom-img-preview');
+            container.innerHTML = '';
+            imageLibrary.forEach(img => {
+                const thumb = document.createElement('div');
+                thumb.className = 'img-thumb';
+                thumb.onclick = () => {
+                    document.getElementById('cfg-image-list').value = img.id;
+                    refreshImagePreviewGrid();
+                };
+
+                const currentSelectedId = document.getElementById('cfg-image-list').value;
+                if (img.id === currentSelectedId) {
+                    thumb.classList.add('selected');
+                }
+
+                const imgEl = document.createElement('img');
+                imgEl.src = img.url;
+                thumb.appendChild(imgEl);
+
+                if (img.id.startsWith('custom_')) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn-del';
+                    delBtn.innerText = '✕';
+                    delBtn.onclick = (e) => deleteCustomImage(img.id, e);
+                    thumb.appendChild(delBtn);
+                }
+
+                container.appendChild(thumb);
+            });
+        }
+
+        function reopenSetup() {
+            document.getElementById('modal-result').classList.add('hidden');
+            document.getElementById('modal-setup').classList.remove('hidden');
+        }
+
+        function launchGame() {
+            gameMode = document.getElementById('cfg-mode').value;
+            gridSize = parseInt(document.getElementById('cfg-grid').value);
+            timeLimit = parseInt(document.getElementById('cfg-time').value);
+
+            document.getElementById('modal-setup').classList.add('hidden');
+
+            if (gameMode === 'hanzi') {
+                const char = HANZI_LIST[Math.floor(Math.random() * HANZI_LIST.length)];
+                document.getElementById('header-mode-badge').innerText = `汉字: ${char}`;
+                renderHanziToCanvas(char, (dataUrl) => {
+                    activeDataUrl = dataUrl;
+                    initGameData();
+                });
+            } else {
+                const selectedId = document.getElementById('cfg-image-list').value;
+                selectedImageObj = imageLibrary.find(i => i.id === selectedId) || imageLibrary[0];
+                document.getElementById('header-mode-badge').innerText = `图片: ${selectedImageObj.name}`;
+                activeDataUrl = selectedImageObj.url;
+                initGameData();
+            }
+        }
+
+        function renderHanziToCanvas(char, callback) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 320; canvas.height = 320;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = "#1e293b";
+            ctx.fillRect(0, 0, 320, 320);
+
+            // 米字格线
+            ctx.strokeStyle = "#334155";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(160, 0); ctx.lineTo(160, 320);
+            ctx.moveTo(0, 160); ctx.lineTo(320, 160);
+            ctx.moveTo(0, 0); ctx.lineTo(320, 320);
+            ctx.moveTo(320, 0); ctx.lineTo(0, 320);
+            ctx.stroke();
+
+            // 绘制汉字
+            ctx.fillStyle = "#f8fafc";
+            ctx.font = 'bold 220px "Kaiti", "STKaiti", serif';
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(char, 160, 170);
+
+            callback(canvas.toDataURL());
+        }
+
+        function initGameData() {
+            setupPlayerBoard('purple');
+            setupPlayerBoard('gold');
+            startCountdown();
+        }
+
+        function setupPlayerBoard(p) {
+            const total = gridSize * gridSize;
+            let arr = Array.from({length: total}, (_, i) => i);
+
+            // 打乱且确保非原样
+            do {
+                arr.sort(() => Math.random() - 0.5);
+            } while (checkWin(arr));
+
+            players[p].board = [...arr];
+            players[p].consecutiveErrors = 0;
+            players[p].isFrozen = false;
+            players[p].isMathLocked = false;
+
+            document.getElementById(`freeze-${p}`).classList.add("hidden");
+            document.getElementById(`math-${p}`).classList.add("hidden");
+
+            renderGridUI(p);
+        }
+
+        function renderGridUI(p) {
+            const gridEl = document.getElementById(`grid-${p}`);
+            gridEl.innerHTML = "";
+            gridEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            gridEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+
+            players[p].board.forEach((tileIdx, slotPos) => {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.dataset.player = p;
+                tile.dataset.slot = slotPos;
+                tile.dataset.tileIdx = tileIdx;
+
+                const r = Math.floor(tileIdx / gridSize);
+                const c = tileIdx % gridSize;
+                const pct = 100 / (gridSize - 1);
+
+                tile.style.backgroundImage = `url(${activeDataUrl})`;
+                tile.style.backgroundSize = `${gridSize * 100}% ${gridSize * 100}%`;
+                tile.style.backgroundPosition = `${c * pct}% ${r * pct}%`;
+
+                // ✅ 规则：处于正确位置时添加青色小勾勾 (✓)
+                if (tileIdx === slotPos) {
+                    const check = document.createElement('div');
+                    check.className = 'check-badge';
+                    check.innerText = '✓';
+                    tile.appendChild(check);
+                }
+
+                // 鼠标与触摸拖拽手势支持
+                bindDragAndTouchEvents(tile);
+
+                gridEl.appendChild(tile);
+            });
+        }
+
+        let draggedSlotInfo = null;
+
+        function bindDragAndTouchEvents(tile) {
+            tile.draggable = true;
+
+            // 桌面端 Mouse Drag Events
+            tile.addEventListener('dragstart', (e) => {
+                const p = tile.dataset.player;
+                if (players[p].isFrozen || players[p].isMathLocked) {
+                    e.preventDefault();
+                    return;
+                }
+                draggedSlotInfo = { player: p, slot: parseInt(tile.dataset.slot) };
+                tile.classList.add('dragging');
+            });
+
+            tile.addEventListener('dragover', (e) => e.preventDefault());
+
+            tile.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (!draggedSlotInfo) return;
+                const targetSlot = parseInt(tile.dataset.slot);
+                const p = tile.dataset.player;
+                if (p === draggedSlotInfo.player) {
+                    executeSwap(p, draggedSlotInfo.slot, targetSlot);
+                }
+            });
+
+            tile.addEventListener('dragend', () => {
+                tile.classList.remove('dragging');
+                draggedSlotInfo = null;
+            });
+
+            // 移动端 Touch Events
+            tile.addEventListener('touchstart', (e) => {
+                const p = tile.dataset.player;
+                if (players[p].isFrozen || players[p].isMathLocked) return;
+                draggedSlotInfo = { player: p, slot: parseInt(tile.dataset.slot) };
+                tile.classList.add('dragging');
+            }, {passive: true});
+
+            tile.addEventListener('touchend', (e) => {
+                tile.classList.remove('dragging');
+                if (!draggedSlotInfo) return;
+                const touch = e.changedTouches[0];
+                const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (targetEl && targetEl.closest('.tile')) {
+                    const closestTile = targetEl.closest('.tile');
+                    const targetPlayer = closestTile.dataset.player;
+                    const targetSlot = parseInt(closestTile.dataset.slot);
+                    if (targetPlayer === draggedSlotInfo.player) {
+                        executeSwap(targetPlayer, draggedSlotInfo.slot, targetSlot);
+                    }
+                }
+                draggedSlotInfo = null;
+            });
+        }
+
+        function executeSwap(p, slotA, slotB) {
+            if (slotA === slotB) return;
+            if (players[p].isFrozen || players[p].isMathLocked) return;
+
+            // 交换位置
+            const temp = players[p].board[slotA];
+            players[p].board[slotA] = players[p].board[slotB];
+            players[p].board[slotB] = temp;
+
+            const tileAGood = (players[p].board[slotA] === slotA);
+            const tileBGood = (players[p].board[slotB] === slotB);
+
+            if (tileAGood || tileBGood) {
+                // ✅ 正确放置：重置连错，触发算术锁关
+                players[p].consecutiveErrors = 0;
+                renderGridUI(p);
+                openMathChallenge(p);
+            } else {
+                // ❌ 错误放置
+                players[p].consecutiveErrors++;
+                renderGridUI(p);
+
+                // ✅ 规则：连续拖曳错误两次，冻结 2 秒
+                if (players[p].consecutiveErrors >= 2) {
+                    triggerFreezeOverlay(p);
+                }
+            }
+        }
+
+        // 冻结 2 秒处理
+        function triggerFreezeOverlay(p) {
+            players[p].isFrozen = true;
+            players[p].consecutiveErrors = 0;
+
+            const freezeEl = document.getElementById(`freeze-${p}`);
+            const freezeSecEl = document.getElementById(`freeze-sec-${p}`);
+            freezeEl.classList.remove('hidden');
+
+            let countdown = 2;
+            freezeSecEl.innerText = `${countdown}s`;
+
+            const timer = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    freezeSecEl.innerText = `${countdown}s`;
+                } else {
+                    clearInterval(timer);
+                    players[p].isFrozen = false;
+                    freezeEl.classList.add('hidden');
+                }
+            }, 1000);
+        }
+
+        // 弹出个位数加减乘除数学题
+        function openMathChallenge(p) {
+            players[p].isMathLocked = true;
+            players[p].currentMath = generateSingleDigitMath();
+
+            const mathMask = document.getElementById(`math-${p}`);
+            const mathExpr = document.getElementById(`math-expr-${p}`);
+            const mathMsg = document.getElementById(`math-msg-${p}`);
+
+            mathExpr.innerText = players[p].currentMath.expr;
+            mathMsg.innerText = "点击按钮解答";
+            mathMsg.style.color = "#94a3b8";
+
+            mathMask.classList.remove('hidden');
+        }
+
+        // 产生个位数算法 (答案范围: 0 ~ 9)
+        function generateSingleDigitMath() {
+            const ops = ['+', '-', '*', '/'];
+            const op = ops[Math.floor(Math.random() * ops.length)];
+            let a, b, ans;
+
+            if (op === '+') {
+                ans = Math.floor(Math.random() * 10);
+                a = Math.floor(Math.random() * (ans + 1));
+                b = ans - a;
+            } else if (op === '-') {
+                a = Math.floor(Math.random() * 10);
+                b = Math.floor(Math.random() * (a + 1));
+                ans = a - b;
+            } else if (op === '*') {
+                const pairs = [];
+                for (let i = 0; i <= 9; i++) {
+                    for (let j = 0; j <= 9; j++) {
+                        if (i * j <= 9) pairs.push([i, j]);
+                    }
+                }
+                const pair = pairs[Math.floor(Math.random() * pairs.length)];
+                a = pair[0]; b = pair[1]; ans = a * b;
+            } else { // '/'
+                ans = Math.floor(Math.random() * 10);
+                b = Math.floor(Math.random() * 9) + 1; // 1..9
+                a = ans * b;
+            }
+
+            const symMap = { '+': '+', '-': '-', '*': '×', '/': '÷' };
+            return {
+                expr: `${a} ${symMap[op]} ${b} = ?`,
+                ans: ans
+            };
+        }
+
+        // 点击 0-9 提交数学答案
+        function handleMathInput(p, val) {
+            if (!players[p].isMathLocked) return;
+
+            const mathMsg = document.getElementById(`math-msg-${p}`);
+
+            if (val === players[p].currentMath.ans) {
+                // ✅ 答对关闭锁关
+                players[p].isMathLocked = false;
+                document.getElementById(`math-${p}`).classList.add('hidden');
+
+                // 检查是否全盘拼图胜利
+                if (checkWin(players[p].board)) {
+                    triggerWin(p);
+                }
+            } else {
+                // ❌ 答错惩罚：换一题新的算术题！
+                mathMsg.innerText = "答案错误！惩罚多做一题！";
+                mathMsg.style.color = "#f43f5e";
+
+                players[p].currentMath = generateSingleDigitMath();
+                setTimeout(() => {
+                    document.getElementById(`math-expr-${p}`).innerText = players[p].currentMath.expr;
+                }, 250);
+            }
+        }
+
+        function checkWin(board) {
+            for (let i = 0; i < board.length; i++) {
+                if (board[i] !== i) return false;
+            }
+            return true;
+        }
+
+        function startCountdown() {
+            clearInterval(timerInterval);
+            timeRemaining = timeLimit;
+
+            const timerEl = document.getElementById('header-timer');
+
+            if (timeLimit === 0) {
+                timerEl.innerText = "∞";
+                return;
+            }
+
+            timerEl.innerText = timeRemaining;
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                timerEl.innerText = timeRemaining;
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    evaluateTimeout();
+                }
+            }, 1000);
+        }
+
+        function evaluateTimeout() {
+            let pScore = 0, gScore = 0;
+            players.purple.board.forEach((v, i) => { if (v === i) pScore++; });
+            players.gold.board.forEach((v, i) => { if (v === i) gScore++; });
+
+            if (pScore > gScore) {
+                triggerWin('purple', `时间到！紫队正确完成 ${pScore} 块，领先金队 (${gScore} 块)`);
+            } else if (gScore > pScore) {
+                triggerWin('gold', `时间到！金队正确完成 ${gScore} 块，领先紫队 (${pScore} 块)`);
+            } else {
+                triggerWin('draw', `时间到！双方均正确还原 ${pScore} 块，平局！`);
+            }
+        }
+
+        function triggerWin(winner, customMsg = "") {
+            clearInterval(timerInterval);
+
+            const modal = document.getElementById('modal-result');
+            const titleEl = document.getElementById('result-winner-title');
+            const previewEl = document.getElementById('result-preview');
+            const descEl = document.getElementById('result-desc');
+
+            previewEl.style.backgroundImage = `url(${activeDataUrl})`;
+
+            if (winner === 'purple') {
+                titleEl.innerText = "💜 紫队 获胜！";
+                titleEl.className = "winner-title win-p";
+                descEl.innerText = customMsg || "率先完成拼图并突破数学锁关！";
+            } else if (winner === 'gold') {
+                titleEl.innerText = "👑 金队 获胜！";
+                titleEl.className = "winner-title win-g";
+                descEl.innerText = customMsg || "率先完成拼图并突破数学锁关！";
+            } else {
+                titleEl.innerText = "🤝 势均力敌 - 平局！";
+                titleEl.className = "winner-title win-d";
+                descEl.innerText = customMsg;
+            }
+
+            modal.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
