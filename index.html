@@ -60,6 +60,29 @@
             border: 1px solid #38bdf8;
         }
 
+        /* 新增：下一题按钮样式 */
+        .btn-next {
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            color: #fff;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn-next:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(6, 182, 212, 0.5);
+        }
+
+        .btn-next:active {
+            transform: scale(0.95);
+        }
+
         .timer-box {
             background: #0f172a;
             padding: 6px 20px;
@@ -106,7 +129,7 @@
             letter-spacing: 1px;
         }
 
-        /* 拼图网格容器（已放大20% -> 384px） */
+        /* 拼图网格容器（384px） */
         .board-wrapper {
             position: relative;
             width: 384px;
@@ -346,6 +369,8 @@
     <!-- 顶部栏 -->
     <header>
         <div class="mode-badge" id="display-mode-text">模式: --</div>
+        <!-- 核心新增：下一题按钮 -->
+        <button class="btn-next" onclick="nextQuestion()">🔄 下一题</button>
         <div class="timer-box">
             <div class="timer-title">剩余时间</div>
             <div class="timer-value" id="display-timer">00</div>
@@ -489,12 +514,8 @@
         let timerInterval = null;
         let timeRemaining = 0;
         let imgDataUrl = "";
+        let lastSelectedSource = ""; // 用于记录上一次选中的题目，防止重复
 
-        // =========================================================================
-        // 方案 A：图片相对路径列表
-        // 如果增加了图片，只需在这个数组里加一行，比如：'./images/hanzi/4.png'
-        // =========================================================================
-        
         // 1. 汉字模式图片列表（请确保 images/hanzi/ 文件夹下有对应的文件名，区分大小写）
         let githubHanziImages = [
             './images/hanzi/1.png',
@@ -531,6 +552,7 @@
             './images/picture/17.jpg',
             './images/picture/18.jpg'
         ];
+
 
         // 玩家状态数据
         let players = {
@@ -574,21 +596,46 @@
             document.getElementById("setup-modal").classList.add("hidden");
             document.getElementById("display-mode-text").innerText = `模式: ${gameMode === 'hanzi' ? '汉字拼图' : '图片拼图'}`;
 
+            // 载入第一题
+            nextQuestion();
+        }
+
+        // 切换下一题的核心处理逻辑
+        function nextQuestion() {
             if (gameMode === 'hanzi') {
                 if (githubHanziImages.length > 0) {
-                    const randomImgUrl = githubHanziImages[Math.floor(Math.random() * githubHanziImages.length)];
-                    loadCustomImageUrl(randomImgUrl, () => initGameBoards());
+                    let selected = githubHanziImages[Math.floor(Math.random() * githubHanziImages.length)];
+                    // 防重复：如果有多张图片，尽量抽取不同的图片
+                    if (githubHanziImages.length > 1) {
+                        while (selected === lastSelectedSource) {
+                            selected = githubHanziImages[Math.floor(Math.random() * githubHanziImages.length)];
+                        }
+                    }
+                    lastSelectedSource = selected;
+                    loadCustomImageUrl(selected, () => initGameBoards());
                 } else {
-                    const randomChar = DEFAULT_HANZI[Math.floor(Math.random() * DEFAULT_HANZI.length)];
-                    renderTextCanvas(randomChar, (url) => {
+                    let selectedChar = DEFAULT_HANZI[Math.floor(Math.random() * DEFAULT_HANZI.length)];
+                    if (DEFAULT_HANZI.length > 1) {
+                        while (selectedChar === lastSelectedSource) {
+                            selectedChar = DEFAULT_HANZI[Math.floor(Math.random() * DEFAULT_HANZI.length)];
+                        }
+                    }
+                    lastSelectedSource = selectedChar;
+                    renderTextCanvas(selectedChar, (url) => {
                         imgDataUrl = url;
                         initGameBoards();
                     });
                 }
             } else {
                 if (githubPictureImages.length > 0) {
-                    const randomImgUrl = githubPictureImages[Math.floor(Math.random() * githubPictureImages.length)];
-                    loadCustomImageUrl(randomImgUrl, () => initGameBoards());
+                    let selected = githubPictureImages[Math.floor(Math.random() * githubPictureImages.length)];
+                    if (githubPictureImages.length > 1) {
+                        while (selected === lastSelectedSource) {
+                            selected = githubPictureImages[Math.floor(Math.random() * githubPictureImages.length)];
+                        }
+                    }
+                    lastSelectedSource = selected;
+                    loadCustomImageUrl(selected, () => initGameBoards());
                 } else {
                     renderFallbackPictureCanvas("图片模式", (url) => {
                         imgDataUrl = url;
