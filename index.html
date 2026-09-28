@@ -675,6 +675,11 @@
             callback(canvas.toDataURL());
         }
 
+        // 检查数组中是否有任何一块拼图恰好在原位
+        function hasAnyCorrectTile(arr) {
+            return arr.some((val, idx) => val === idx);
+        }
+
         function initPlayerBoard(p) {
             const boardEl = document.getElementById(`board-${p}`);
             boardEl.innerHTML = "";
@@ -684,9 +689,10 @@
             const totalTiles = gridSize * gridSize;
             let indices = Array.from({length: totalTiles}, (_, i) => i);
 
+            // 核心修改：持续打乱，直到【没有任何一块】拼图处于正确位置（Derangement 错位排列）
             do {
                 indices.sort(() => Math.random() - 0.5);
-            } while (checkArrayWin(indices));
+            } while (hasAnyCorrectTile(indices));
 
             players[p].board = [...indices];
             players[p].consecutiveErrors = 0;
@@ -790,9 +796,7 @@
             if (players[p].isFrozen || players[p].isMathLocked) return;
 
             touchDraggedTile = this;
-            const touch = e.touches[0];
 
-            // 创建触摸拖动时的半透明跟随图标
             touchClone = this.cloneNode(true);
             touchClone.style.position = "fixed";
             touchClone.style.zIndex = "1000";
@@ -812,7 +816,7 @@
 
         function handleTouchMove(e) {
             if (!touchDraggedTile || !touchClone) return;
-            e.preventDefault(); // 禁止屏幕整体随手势滑动
+            e.preventDefault();
 
             const touch = e.touches[0];
             touchClone.style.left = (touch.clientX - touchClone.offsetWidth / 2) + "px";
@@ -831,7 +835,6 @@
 
             touchDraggedTile.classList.remove("dragging");
 
-            // 识别手指抬起位置下的拼图块目标
             const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
             const dropTargetTile = targetEl ? targetEl.closest(".tile") : null;
 
