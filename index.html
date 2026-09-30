@@ -505,569 +505,582 @@
     </div>
 
     <script>
-        // 背景音乐加载
-        const bgm = new Audio('bgm.mp3');
-        bgm.loop = true;
+// 背景音乐加载
+const bgm = new Audio('bgm.mp3');
+bgm.loop = true;
 
-        // 预设默认文字降级题库
-        const DEFAULT_HANZI = ["福", "龙", "胜", "智", "勇", "华", "瑞", "雅", "德", "春"];
+// 预设默认文字降级题库
+const DEFAULT_HANZI = ["福", "龙", "胜", "智", "勇", "华", "瑞", "雅", "德", "春"];
 
-        let gameMode = 'hanzi';
-        let gridSize = 3;
-        let timeLimit = 60;
-        let timerInterval = null;
-        let timeRemaining = 0;
-        let imgDataUrl = "";
-        let lastSelectedSource = "";
+let gameMode = 'hanzi';
+let gridSize = 3;
+let timeLimit = 60;
+let timerInterval = null;
+let timeRemaining = 0;
+let imgDataUrl = "";
+let lastSelectedSource = "";
 
-        let githubHanziImages = [
-            './images/hanzi/1.png',
-            './images/hanzi/2.png',
-            './images/hanzi/3.png',
-            './images/hanzi/4.png',
-            './images/hanzi/5.png',
-            './images/hanzi/6.png',
-            './images/hanzi/7.png',
-            './images/hanzi/8.png', 
-            './images/hanzi/9.png',
-            './images/hanzi/10.png',
-            './images/hanzi/11.png'
-        ];
+let githubHanziImages = [
+    './images/hanzi/1.png', './images/hanzi/2.png', './images/hanzi/3.png',
+    './images/hanzi/4.png', './images/hanzi/5.png', './images/hanzi/6.png',
+    './images/hanzi/7.png', './images/hanzi/8.png', './images/hanzi/9.png',
+    './images/hanzi/10.png', './images/hanzi/11.png'
+];
 
-        let githubPictureImages = [
-            './images/picture/1.jpg',
-            './images/picture/2.jpg',
-            './images/picture/3.jpg',
-            './images/picture/4.jpg',
-            './images/picture/5.jpg',
-            './images/picture/6.jpg',
-            './images/picture/7.jpg',
-            './images/picture/8.jpg',
-            './images/picture/9.jpg',
-            './images/picture/10.jpg',
-            './images/picture/11.jpg',
-            './images/picture/12.jpg',
-            './images/picture/13.png',
-            './images/picture/14.jpg',
-            './images/picture/15.jpg',
-            './images/picture/16.jpg',
-            './images/picture/17.jpg',
-            './images/picture/18.jpg'
-        ];
+let githubPictureImages = [
+    './images/picture/1.jpg', './images/picture/2.jpg', './images/picture/3.jpg',
+    './images/picture/4.jpg', './images/picture/5.jpg', './images/picture/6.jpg',
+    './images/picture/7.jpg', './images/picture/8.jpg', './images/picture/9.jpg',
+    './images/picture/10.jpg', './images/picture/11.jpg', './images/picture/12.jpg',
+    './images/picture/13.png', './images/picture/14.jpg', './images/picture/15.jpg',
+    './images/picture/16.jpg', './images/picture/17.jpg', './images/picture/18.jpg'
+];
 
-        let players = {
-            purple: { board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null, inputVal: "" },
-            gold: { board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null, inputVal: "" }
-        };
+// 核心改动 1：在玩家对象中加入独立的 touch 状态存储，避免双人触控相互覆盖
+let players = {
+    purple: { 
+        board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null, inputVal: "",
+        touchId: null, touchTile: null, touchClone: null 
+    },
+    gold: { 
+        board: [], consecutiveErrors: 0, isFrozen: false, isMathLocked: false, currentMath: null, inputVal: "",
+        touchId: null, touchTile: null, touchClone: null 
+    }
+};
 
-        function showSetup() {
-            bgm.pause();
-            document.getElementById("result-modal").classList.add("hidden");
-            document.getElementById("setup-modal").classList.remove("hidden");
+function showSetup() {
+    bgm.pause();
+    document.getElementById("result-modal").classList.add("hidden");
+    document.getElementById("setup-modal").classList.remove("hidden");
+}
+
+function handleLocalUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const url = event.target.result;
+        const currentSelectedMode = document.getElementById("select-mode").value;
+        if (currentSelectedMode === 'hanzi') {
+            githubHanziImages.push(url);
+        } else {
+            githubPictureImages.push(url);
         }
+        alert("临时图片添加成功！已放入当前模式库中。");
+    };
+    reader.readAsDataURL(file);
+}
 
-        function handleLocalUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const url = event.target.result;
-                const currentSelectedMode = document.getElementById("select-mode").value;
-                if (currentSelectedMode === 'hanzi') {
-                    githubHanziImages.push(url);
-                } else {
-                    githubPictureImages.push(url);
-                }
-                alert("临时图片添加成功！已放入当前模式库中。");
-            };
-            reader.readAsDataURL(file);
-        }
+function startGame() {
+    gameMode = document.getElementById("select-mode").value;
+    gridSize = parseInt(document.getElementById("select-grid").value);
+    timeLimit = parseInt(document.getElementById("select-time").value);
 
-        function startGame() {
-            gameMode = document.getElementById("select-mode").value;
-            gridSize = parseInt(document.getElementById("select-grid").value);
-            timeLimit = parseInt(document.getElementById("select-time").value);
+    bgm.currentTime = 0;
+    bgm.play().catch(err => console.log("BGM 自动播放提示:", err));
 
-            bgm.currentTime = 0;
-            bgm.play().catch(err => console.log("BGM 自动播放提示:", err));
+    document.getElementById("setup-modal").classList.add("hidden");
+    document.getElementById("display-mode-text").innerText = `模式: ${gameMode === 'hanzi' ? '汉字拼图' : '图片拼图'}`;
 
-            document.getElementById("setup-modal").classList.add("hidden");
-            document.getElementById("display-mode-text").innerText = `模式: ${gameMode === 'hanzi' ? '汉字拼图' : '图片拼图'}`;
+    nextQuestion();
+}
 
-            nextQuestion();
-        }
-
-        function nextQuestion() {
-            if (gameMode === 'hanzi') {
-                if (githubHanziImages.length > 0) {
-                    let selected = githubHanziImages[Math.floor(Math.random() * githubHanziImages.length)];
-                    if (githubHanziImages.length > 1) {
-                        while (selected === lastSelectedSource) {
-                            selected = githubHanziImages[Math.floor(Math.random() * githubHanziImages.length)];
-                        }
-                    }
-                    lastSelectedSource = selected;
-                    loadCustomImageUrl(selected, () => initGameBoards());
-                } else {
-                    let selectedChar = DEFAULT_HANZI[Math.floor(Math.random() * DEFAULT_HANZI.length)];
-                    if (DEFAULT_HANZI.length > 1) {
-                        while (selectedChar === lastSelectedSource) {
-                            selectedChar = DEFAULT_HANZI[Math.floor(Math.random() * DEFAULT_HANZI.length)];
-                        }
-                    }
-                    lastSelectedSource = selectedChar;
-                    renderTextCanvas(selectedChar, (url) => {
-                        imgDataUrl = url;
-                        initGameBoards();
-                    });
-                }
-            } else {
-                if (githubPictureImages.length > 0) {
-                    let selected = githubPictureImages[Math.floor(Math.random() * githubPictureImages.length)];
-                    if (githubPictureImages.length > 1) {
-                        while (selected === lastSelectedSource) {
-                            selected = githubPictureImages[Math.floor(Math.random() * githubPictureImages.length)];
-                        }
-                    }
-                    lastSelectedSource = selected;
-                    loadCustomImageUrl(selected, () => initGameBoards());
-                } else {
-                    renderFallbackPictureCanvas("图片模式", (url) => {
-                        imgDataUrl = url;
-                        initGameBoards();
-                    });
+function nextQuestion() {
+    if (gameMode === 'hanzi') {
+        if (githubHanziImages.length > 0) {
+            let selected = githubHanziImages[Math.floor(Math.random() * githubHanziImages.length)];
+            if (githubHanziImages.length > 1) {
+                while (selected === lastSelectedSource) {
+                    selected = githubHanziImages[Math.floor(Math.random() * githubHanziImages.length)];
                 }
             }
-        }
-
-        function initGameBoards() {
-            initPlayerBoard('purple');
-            initPlayerBoard('gold');
-            startTimer();
-        }
-
-        function loadCustomImageUrl(url, callback) {
-            const img = new Image();
-            if (!url.startsWith('data:')) {
-                img.crossOrigin = "Anonymous";
-            }
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = 438;
-                canvas.height = 438;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, 438, 438);
-                imgDataUrl = canvas.toDataURL();
-                callback();
-            };
-            img.onerror = () => {
-                renderFallbackPictureCanvas("加载失败", (fallbackUrl) => {
-                    imgDataUrl = fallbackUrl;
-                    callback();
-                });
-            };
-            img.src = url;
-        }
-
-        function renderTextCanvas(char, callback) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 438; canvas.height = 438;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = "#1e293b"; ctx.fillRect(0, 0, 438, 438);
-            ctx.strokeStyle = "#334155"; ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(219, 0); ctx.lineTo(219, 438);
-            ctx.moveTo(0, 219); ctx.lineTo(438, 219);
-            ctx.stroke();
-            ctx.fillStyle = "#f8fafc";
-            ctx.font = 'bold 296px "Kaiti", "STKaiti", serif';
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(char, 219, 233);
-            callback(canvas.toDataURL());
-        }
-
-        function renderFallbackPictureCanvas(text, callback) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 438; canvas.height = 438;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = "#0284c7"; ctx.fillRect(0, 0, 438, 438);
-            ctx.fillStyle = "#ffffff";
-            ctx.font = 'bold 48px sans-serif';
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(text, 219, 219);
-            callback(canvas.toDataURL());
-        }
-
-        // 检查数组中是否有任何一块拼图恰好在原位
-        function hasAnyCorrectTile(arr) {
-            return arr.some((val, idx) => val === idx);
-        }
-
-        function initPlayerBoard(p) {
-            const boardEl = document.getElementById(`board-${p}`);
-            boardEl.innerHTML = "";
-            boardEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-            boardEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
-
-            const totalTiles = gridSize * gridSize;
-            let indices = Array.from({length: totalTiles}, (_, i) => i);
-
-            // 核心修改：持续打乱，直到【没有任何一块】拼图处于正确位置（Derangement 错位排列）
-            do {
-                indices.sort(() => Math.random() - 0.5);
-            } while (hasAnyCorrectTile(indices));
-
-            players[p].board = [...indices];
-            players[p].consecutiveErrors = 0;
-            players[p].isFrozen = false;
-            players[p].isMathLocked = false;
-            players[p].inputVal = "";
-
-            document.getElementById(`freeze-${p}`).classList.add("hidden");
-            document.getElementById(`math-${p}`).classList.add("hidden");
-
-            renderBoardTiles(p);
-        }
-
-        function renderBoardTiles(p) {
-            const boardEl = document.getElementById(`board-${p}`);
-            boardEl.innerHTML = "";
-
-            players[p].board.forEach((tileIdx, currentPos) => {
-                const tile = document.createElement("div");
-                tile.className = "tile";
-                tile.draggable = !players[p].isFrozen && !players[p].isMathLocked;
-                tile.dataset.player = p;
-                tile.dataset.originalIndex = tileIdx;
-                tile.dataset.currentPos = currentPos;
-
-                const row = Math.floor(tileIdx / gridSize);
-                const col = tileIdx % gridSize;
-                const percentage = 100 / (gridSize - 1);
-
-                tile.style.backgroundImage = `url(${imgDataUrl})`;
-                tile.style.backgroundSize = `${gridSize * 100}% ${gridSize * 100}%`;
-                tile.style.backgroundPosition = `${col * percentage}% ${row * percentage}%`;
-
-                if (tileIdx === currentPos) {
-                    const check = document.createElement("div");
-                    check.className = "check-mark";
-                    check.innerText = "✓";
-                    tile.appendChild(check);
+            lastSelectedSource = selected;
+            loadCustomImageUrl(selected, () => initGameBoards());
+        } else {
+            let selectedChar = DEFAULT_HANZI[Math.floor(Math.random() * DEFAULT_HANZI.length)];
+            if (DEFAULT_HANZI.length > 1) {
+                while (selectedChar === lastSelectedSource) {
+                    selectedChar = DEFAULT_HANZI[Math.floor(Math.random() * DEFAULT_HANZI.length)];
                 }
-
-                // 鼠标拖拽事件
-                tile.addEventListener("dragstart", handleDragStart);
-                tile.addEventListener("dragover", handleDragOver);
-                tile.addEventListener("drop", handleDrop);
-                tile.addEventListener("dragend", handleDragEnd);
-
-                // 触摸屏拖曳事件 (Touch Events)
-                tile.addEventListener("touchstart", handleTouchStart, { passive: false });
-                tile.addEventListener("touchmove", handleTouchMove, { passive: false });
-                tile.addEventListener("touchend", handleTouchEnd, { passive: false });
-
-                boardEl.appendChild(tile);
+            }
+            lastSelectedSource = selectedChar;
+            renderTextCanvas(selectedChar, (url) => {
+                imgDataUrl = url;
+                initGameBoards();
             });
         }
-
-        // --- 鼠标拖拽逻辑 ---
-        let draggedTile = null;
-
-        function handleDragStart(e) {
-            const p = this.dataset.player;
-            if (players[p].isFrozen || players[p].isMathLocked) {
-                e.preventDefault();
-                return;
-            }
-            draggedTile = this;
-            this.classList.add("dragging");
-            e.dataTransfer.setData("text/plain", this.dataset.currentPos);
-        }
-
-        function handleDragOver(e) { e.preventDefault(); }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            if (!draggedTile) return;
-
-            const targetTile = this;
-            const p = draggedTile.dataset.player;
-
-            if (p !== targetTile.dataset.player) return;
-            if (players[p].isFrozen || players[p].isMathLocked) return;
-
-            const posA = parseInt(draggedTile.dataset.currentPos);
-            const posB = parseInt(targetTile.dataset.currentPos);
-
-            swapTiles(p, posA, posB);
-        }
-
-        function handleDragEnd() {
-            if (draggedTile) {
-                draggedTile.classList.remove("dragging");
-                draggedTile = null;
-            }
-        }
-
-        // --- 触摸屏触碰式拖拽核心逻辑 ---
-        let touchDraggedTile = null;
-        let touchClone = null;
-
-        function handleTouchStart(e) {
-            const p = this.dataset.player;
-            if (players[p].isFrozen || players[p].isMathLocked) return;
-
-            touchDraggedTile = this;
-
-            touchClone = this.cloneNode(true);
-            touchClone.style.position = "fixed";
-            touchClone.style.zIndex = "1000";
-            touchClone.style.pointerEvents = "none";
-            touchClone.style.opacity = "0.85";
-            touchClone.style.transform = "scale(1.1)";
-            touchClone.style.width = this.offsetWidth + "px";
-            touchClone.style.height = this.offsetHeight + "px";
-
-            const rect = this.getBoundingClientRect();
-            touchClone.style.left = rect.left + "px";
-            touchClone.style.top = rect.top + "px";
-
-            document.body.appendChild(touchClone);
-            this.classList.add("dragging");
-        }
-
-        function handleTouchMove(e) {
-            if (!touchDraggedTile || !touchClone) return;
-            e.preventDefault();
-
-            const touch = e.touches[0];
-            touchClone.style.left = (touch.clientX - touchClone.offsetWidth / 2) + "px";
-            touchClone.style.top = (touch.clientY - touchClone.offsetHeight / 2) + "px";
-        }
-
-        function handleTouchEnd(e) {
-            if (!touchDraggedTile) return;
-
-            const touch = e.changedTouches[0];
-            
-            if (touchClone) {
-                touchClone.remove();
-                touchClone = null;
-            }
-
-            touchDraggedTile.classList.remove("dragging");
-
-            const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-            const dropTargetTile = targetEl ? targetEl.closest(".tile") : null;
-
-            if (dropTargetTile && dropTargetTile !== touchDraggedTile) {
-                const p = touchDraggedTile.dataset.player;
-                const targetPlayer = dropTargetTile.dataset.player;
-
-                if (p === targetPlayer && !players[p].isFrozen && !players[p].isMathLocked) {
-                    const posA = parseInt(touchDraggedTile.dataset.currentPos);
-                    const posB = parseInt(dropTargetTile.dataset.currentPos);
-
-                    swapTiles(p, posA, posB);
+    } else {
+        if (githubPictureImages.length > 0) {
+            let selected = githubPictureImages[Math.floor(Math.random() * githubPictureImages.length)];
+            if (githubPictureImages.length > 1) {
+                while (selected === lastSelectedSource) {
+                    selected = githubPictureImages[Math.floor(Math.random() * githubPictureImages.length)];
                 }
             }
+            lastSelectedSource = selected;
+            loadCustomImageUrl(selected, () => initGameBoards());
+        } else {
+            renderFallbackPictureCanvas("图片模式", (url) => {
+                imgDataUrl = url;
+                initGameBoards();
+            });
+        }
+    }
+}
 
-            touchDraggedTile = null;
+function initGameBoards() {
+    initPlayerBoard('purple');
+    initPlayerBoard('gold');
+    startTimer();
+}
+
+function loadCustomImageUrl(url, callback) {
+    const img = new Image();
+    if (!url.startsWith('data:')) {
+        img.crossOrigin = "Anonymous";
+    }
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 438;
+        canvas.height = 438;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 438, 438);
+        imgDataUrl = canvas.toDataURL();
+        callback();
+    };
+    img.onerror = () => {
+        renderFallbackPictureCanvas("加载失败", (fallbackUrl) => {
+            imgDataUrl = fallbackUrl;
+            callback();
+        });
+    };
+    img.src = url;
+}
+
+function renderTextCanvas(char, callback) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 438; canvas.height = 438;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = "#1e293b"; ctx.fillRect(0, 0, 438, 438);
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(219, 0); ctx.lineTo(219, 438);
+    ctx.moveTo(0, 219); ctx.lineTo(438, 219);
+    ctx.stroke();
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = 'bold 296px "Kaiti", "STKaiti", serif';
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(char, 219, 233);
+    callback(canvas.toDataURL());
+}
+
+function renderFallbackPictureCanvas(text, callback) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 438; canvas.height = 438;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = "#0284c7"; ctx.fillRect(0, 0, 438, 438);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = 'bold 48px sans-serif';
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(text, 219, 219);
+    callback(canvas.toDataURL());
+}
+
+function hasAnyCorrectTile(arr) {
+    return arr.some((val, idx) => val === idx);
+}
+
+function initPlayerBoard(p) {
+    cleanPlayerTouch(p); // 初始化时清理未完成的触控
+
+    const boardEl = document.getElementById(`board-${p}`);
+    boardEl.innerHTML = "";
+    boardEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+    boardEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+
+    const totalTiles = gridSize * gridSize;
+    let indices = Array.from({length: totalTiles}, (_, i) => i);
+
+    do {
+        indices.sort(() => Math.random() - 0.5);
+    } while (hasAnyCorrectTile(indices));
+
+    players[p].board = [...indices];
+    players[p].consecutiveErrors = 0;
+    players[p].isFrozen = false;
+    players[p].isMathLocked = false;
+    players[p].inputVal = "";
+
+    document.getElementById(`freeze-${p}`).classList.add("hidden");
+    document.getElementById(`math-${p}`).classList.add("hidden");
+
+    renderBoardTiles(p);
+}
+
+function renderBoardTiles(p) {
+    const boardEl = document.getElementById(`board-${p}`);
+    boardEl.innerHTML = "";
+
+    players[p].board.forEach((tileIdx, currentPos) => {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        tile.draggable = !players[p].isFrozen && !players[p].isMathLocked;
+        tile.dataset.player = p;
+        tile.dataset.originalIndex = tileIdx;
+        tile.dataset.currentPos = currentPos;
+
+        const row = Math.floor(tileIdx / gridSize);
+        const col = tileIdx % gridSize;
+        const percentage = 100 / (gridSize - 1);
+
+        tile.style.backgroundImage = `url(${imgDataUrl})`;
+        tile.style.backgroundSize = `${gridSize * 100}% ${gridSize * 100}%`;
+        tile.style.backgroundPosition = `${col * percentage}% ${row * percentage}%`;
+
+        if (tileIdx === currentPos) {
+            const check = document.createElement("div");
+            check.className = "check-mark";
+            check.innerText = "✓";
+            tile.appendChild(check);
         }
 
-        // 通用图块对调与惩罚/关卡逻辑
-        function swapTiles(p, posA, posB) {
-            if (posA === posB) return;
+        // 鼠标事件
+        tile.addEventListener("dragstart", handleDragStart);
+        tile.addEventListener("dragover", handleDragOver);
+        tile.addEventListener("drop", handleDrop);
+        tile.addEventListener("dragend", handleDragEnd);
 
-            const temp = players[p].board[posA];
-            players[p].board[posA] = players[p].board[posB];
-            players[p].board[posB] = temp;
+        // 触控事件（增加 touchcancel 解决中途手势中断）
+        tile.addEventListener("touchstart", handleTouchStart, { passive: false });
+        tile.addEventListener("touchmove", handleTouchMove, { passive: false });
+        tile.addEventListener("touchend", handleTouchEnd, { passive: false });
+        tile.addEventListener("touchcancel", handleTouchEnd, { passive: false });
 
-            const tileAIsCorrect = (players[p].board[posA] === posA);
-            const tileBIsCorrect = (players[p].board[posB] === posB);
+        boardEl.appendChild(tile);
+    });
+}
 
-            if (tileAIsCorrect || tileBIsCorrect) {
-                players[p].consecutiveErrors = 0;
-                renderBoardTiles(p);
-                triggerMathChallenge(p);
-            } else {
-                players[p].consecutiveErrors++;
-                renderBoardTiles(p);
+// --- 鼠标拖拽逻辑 ---
+let draggedTile = null;
 
-                if (players[p].consecutiveErrors >= 2) {
-                    triggerFreeze(p);
-                }
+function handleDragStart(e) {
+    const p = this.dataset.player;
+    if (players[p].isFrozen || players[p].isMathLocked) {
+        e.preventDefault();
+        return;
+    }
+    draggedTile = this;
+    this.classList.add("dragging");
+    e.dataTransfer.setData("text/plain", this.dataset.currentPos);
+}
+
+function handleDragOver(e) { e.preventDefault(); }
+
+function handleDrop(e) {
+    e.preventDefault();
+    if (!draggedTile) return;
+
+    const targetTile = this;
+    const p = draggedTile.dataset.player;
+
+    if (p !== targetTile.dataset.player) return;
+    if (players[p].isFrozen || players[p].isMathLocked) return;
+
+    const posA = parseInt(draggedTile.dataset.currentPos);
+    const posB = parseInt(targetTile.dataset.currentPos);
+
+    swapTiles(p, posA, posB);
+}
+
+function handleDragEnd() {
+    if (draggedTile) {
+        draggedTile.classList.remove("dragging");
+        draggedTile = null;
+    }
+}
+
+// --- 核心修改：支持双人同时多点触控的 Touch 逻辑 ---
+function handleTouchStart(e) {
+    const p = this.dataset.player;
+    if (players[p].isFrozen || players[p].isMathLocked) return;
+
+    // 清理该玩家可能残留的前一次触控
+    cleanPlayerTouch(p);
+
+    // 获取落在当前元素上的触控点
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+
+    players[p].touchId = touch.identifier;
+    players[p].touchTile = this;
+
+    // 创建跟随手指移动的克隆节点
+    const clone = this.cloneNode(true);
+    clone.style.position = "fixed";
+    clone.style.zIndex = "1000";
+    clone.style.pointerEvents = "none";
+    clone.style.opacity = "0.85";
+    clone.style.transform = "scale(1.1)";
+    clone.style.width = this.offsetWidth + "px";
+    clone.style.height = this.offsetHeight + "px";
+
+    const rect = this.getBoundingClientRect();
+    clone.style.left = rect.left + "px";
+    clone.style.top = rect.top + "px";
+
+    document.body.appendChild(clone);
+    players[p].touchClone = clone;
+    this.classList.add("dragging");
+}
+
+function handleTouchMove(e) {
+    const p = this.dataset.player;
+    const pState = players[p];
+    if (!pState.touchTile || !pState.touchClone) return;
+
+    // 精准查找属于当前玩家的手指触控点
+    const touch = Array.from(e.changedTouches).find(t => t.identifier === pState.touchId) ||
+                  Array.from(e.touches).find(t => t.identifier === pState.touchId);
+
+    if (!touch) return;
+    e.preventDefault();
+
+    pState.touchClone.style.left = (touch.clientX - pState.touchClone.offsetWidth / 2) + "px";
+    pState.touchClone.style.top = (touch.clientY - pState.touchClone.offsetHeight / 2) + "px";
+}
+
+function handleTouchEnd(e) {
+    const p = this.dataset.player;
+    const pState = players[p];
+    if (!pState.touchTile) return;
+
+    // 查找该玩家抬起的手指触控点
+    const touch = Array.from(e.changedTouches).find(t => t.identifier === pState.touchId);
+
+    if (touch) {
+        // 根据落点获取目标拼图块
+        const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+        const dropTargetTile = targetEl ? targetEl.closest(".tile") : null;
+
+        if (dropTargetTile && dropTargetTile !== pState.touchTile) {
+            const targetPlayer = dropTargetTile.dataset.player;
+            if (p === targetPlayer && !pState.isFrozen && !pState.isMathLocked) {
+                const posA = parseInt(pState.touchTile.dataset.currentPos);
+                const posB = parseInt(dropTargetTile.dataset.currentPos);
+                swapTiles(p, posA, posB);
             }
         }
+    }
 
-        // 冰冻 2 秒处理
-        function triggerFreeze(p) {
-            players[p].isFrozen = true;
-            players[p].consecutiveErrors = 0;
+    cleanPlayerTouch(p);
+}
 
-            const freezeOverlay = document.getElementById(`freeze-${p}`);
-            const freezeTimerEl = document.getElementById(`freeze-timer-${p}`);
-            freezeOverlay.classList.remove("hidden");
+// 辅助清理函数：确保移除临时克隆 DOM 并恢复样式
+function cleanPlayerTouch(p) {
+    const pState = players[p];
+    if (pState.touchClone) {
+        pState.touchClone.remove();
+        pState.touchClone = null;
+    }
+    if (pState.touchTile) {
+        pState.touchTile.classList.remove("dragging");
+        pState.touchTile = null;
+    }
+    pState.touchId = null;
+}
 
-            let remainingSec = 2;
+// 通用图块对调与惩罚/关卡逻辑
+function swapTiles(p, posA, posB) {
+    if (posA === posB) return;
+
+    const temp = players[p].board[posA];
+    players[p].board[posA] = players[p].board[posB];
+    players[p].board[posB] = temp;
+
+    const tileAIsCorrect = (players[p].board[posA] === posA);
+    const tileBIsCorrect = (players[p].board[posB] === posB);
+
+    if (tileAIsCorrect || tileBIsCorrect) {
+        players[p].consecutiveErrors = 0;
+        renderBoardTiles(p);
+        triggerMathChallenge(p);
+    } else {
+        players[p].consecutiveErrors++;
+        renderBoardTiles(p);
+
+        if (players[p].consecutiveErrors >= 2) {
+            triggerFreeze(p);
+        }
+    }
+}
+
+// 冰冻 2 秒处理
+function triggerFreeze(p) {
+    players[p].isFrozen = true;
+    players[p].consecutiveErrors = 0;
+
+    const freezeOverlay = document.getElementById(`freeze-${p}`);
+    const freezeTimerEl = document.getElementById(`freeze-timer-${p}`);
+    freezeOverlay.classList.remove("hidden");
+
+    let remainingSec = 2;
+    freezeTimerEl.innerText = `${remainingSec}s`;
+
+    renderBoardTiles(p);
+
+    const interval = setInterval(() => {
+        remainingSec--;
+        if (remainingSec > 0) {
             freezeTimerEl.innerText = `${remainingSec}s`;
+        } else {
+            clearInterval(interval);
+            players[p].isFrozen = false;
+            freezeOverlay.classList.add("hidden");
+            renderBoardTiles(p);
+        }
+    }, 1000);
+}
 
+// 触发 1-12 乘除法锁关题
+function triggerMathChallenge(p) {
+    players[p].isMathLocked = true;
+    players[p].inputVal = "";
+    players[p].currentMath = generateMultiplicationDivisionMath();
+
+    const mathOverlay = document.getElementById(`math-${p}`);
+    const mathQ = document.getElementById(`math-q-${p}`);
+    const mathInput = document.getElementById(`math-input-${p}`);
+    const mathStatus = document.getElementById(`math-status-${p}`);
+
+    mathQ.innerText = `${players[p].currentMath.q} =`;
+    mathInput.innerText = "?";
+    mathStatus.innerText = "点击数字输入答案";
+    mathStatus.style.color = "#cbd5e1";
+
+    mathOverlay.classList.remove("hidden");
+    renderBoardTiles(p);
+}
+
+function generateMultiplicationDivisionMath() {
+    const isMultiplication = Math.random() < 0.5;
+    const a = Math.floor(Math.random() * 12) + 1;
+    const b = Math.floor(Math.random() * 12) + 1;
+
+    if (isMultiplication) {
+        return { q: `${a} × ${b}`, a: a * b };
+    } else {
+        const product = a * b;
+        return { q: `${product} ÷ ${a}`, a: b };
+    }
+}
+
+function pressMathNum(p, digit) {
+    if (!players[p].isMathLocked) return;
+
+    players[p].inputVal += digit;
+    document.getElementById(`math-input-${p}`).innerText = players[p].inputVal;
+
+    const targetStr = players[p].currentMath.a.toString();
+
+    if (players[p].inputVal.length === targetStr.length) {
+        if (players[p].inputVal === targetStr) {
+            players[p].isMathLocked = false;
+            document.getElementById(`math-${p}`).classList.add("hidden");
             renderBoardTiles(p);
 
-            const interval = setInterval(() => {
-                remainingSec--;
-                if (remainingSec > 0) {
-                    freezeTimerEl.innerText = `${remainingSec}s`;
-                } else {
-                    clearInterval(interval);
-                    players[p].isFrozen = false;
-                    freezeOverlay.classList.add("hidden");
-                    renderBoardTiles(p);
-                }
-            }, 1000);
-        }
+            if (checkArrayWin(players[p].board)) {
+                endGame(p);
+            }
+        } else {
+            const mathStatus = document.getElementById(`math-status-${p}`);
+            mathStatus.innerText = "❌ 答案错误！惩罚多做一题！";
+            mathStatus.style.color = "#f43f5e";
 
-        // 触发 1-12 乘除法锁关题
-        function triggerMathChallenge(p) {
-            players[p].isMathLocked = true;
             players[p].inputVal = "";
             players[p].currentMath = generateMultiplicationDivisionMath();
 
-            const mathOverlay = document.getElementById(`math-${p}`);
-            const mathQ = document.getElementById(`math-q-${p}`);
-            const mathInput = document.getElementById(`math-input-${p}`);
-            const mathStatus = document.getElementById(`math-status-${p}`);
-
-            mathQ.innerText = `${players[p].currentMath.q} =`;
-            mathInput.innerText = "?";
-            mathStatus.innerText = "点击数字输入答案";
-            mathStatus.style.color = "#cbd5e1";
-
-            mathOverlay.classList.remove("hidden");
-            renderBoardTiles(p);
+            setTimeout(() => {
+                document.getElementById(`math-q-${p}`).innerText = `${players[p].currentMath.q} =`;
+                document.getElementById(`math-input-${p}`).innerText = "?";
+            }, 400);
         }
+    }
+}
 
-        function generateMultiplicationDivisionMath() {
-            const isMultiplication = Math.random() < 0.5;
-            const a = Math.floor(Math.random() * 12) + 1;
-            const b = Math.floor(Math.random() * 12) + 1;
+function clearMathNum(p) {
+    if (!players[p].isMathLocked) return;
+    players[p].inputVal = "";
+    document.getElementById(`math-input-${p}`).innerText = "?";
+}
 
-            if (isMultiplication) {
-                return { q: `${a} × ${b}`, a: a * b };
-            } else {
-                const product = a * b;
-                return { q: `${product} ÷ ${a}`, a: b };
-            }
-        }
+function checkArrayWin(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] !== i) return false;
+    }
+    return true;
+}
 
-        function pressMathNum(p, digit) {
-            if (!players[p].isMathLocked) return;
+function startTimer() {
+    clearInterval(timerInterval);
+    timeRemaining = timeLimit;
 
-            players[p].inputVal += digit;
-            document.getElementById(`math-input-${p}`).innerText = players[p].inputVal;
+    const timerDisplay = document.getElementById("display-timer");
+    if (timeLimit === 0) {
+        timerDisplay.innerText = "∞";
+        return;
+    }
 
-            const targetStr = players[p].currentMath.a.toString();
+    timerDisplay.innerText = timeRemaining;
 
-            if (players[p].inputVal.length === targetStr.length) {
-                if (players[p].inputVal === targetStr) {
-                    players[p].isMathLocked = false;
-                    document.getElementById(`math-${p}`).classList.add("hidden");
-                    renderBoardTiles(p);
+    timerInterval = setInterval(() => {
+        timeRemaining--;
+        timerDisplay.innerText = timeRemaining;
 
-                    if (checkArrayWin(players[p].board)) {
-                        endGame(p);
-                    }
-                } else {
-                    const mathStatus = document.getElementById(`math-status-${p}`);
-                    mathStatus.innerText = "❌ 答案错误！惩罚多做一题！";
-                    mathStatus.style.color = "#f43f5e";
-
-                    players[p].inputVal = "";
-                    players[p].currentMath = generateMultiplicationDivisionMath();
-
-                    setTimeout(() => {
-                        document.getElementById(`math-q-${p}`).innerText = `${players[p].currentMath.q} =`;
-                        document.getElementById(`math-input-${p}`).innerText = "?";
-                    }, 400);
-                }
-            }
-        }
-
-        function clearMathNum(p) {
-            if (!players[p].isMathLocked) return;
-            players[p].inputVal = "";
-            document.getElementById(`math-input-${p}`).innerText = "?";
-        }
-
-        function checkArrayWin(arr) {
-            for (let i = 0; i < arr.length; i++) {
-                if (arr[i] !== i) return false;
-            }
-            return true;
-        }
-
-        function startTimer() {
+        if (timeRemaining <= 0) {
             clearInterval(timerInterval);
-            timeRemaining = timeLimit;
-
-            const timerDisplay = document.getElementById("display-timer");
-            if (timeLimit === 0) {
-                timerDisplay.innerText = "∞";
-                return;
-            }
-
-            timerDisplay.innerText = timeRemaining;
-
-            timerInterval = setInterval(() => {
-                timeRemaining--;
-                timerDisplay.innerText = timeRemaining;
-
-                if (timeRemaining <= 0) {
-                    clearInterval(timerInterval);
-                    evaluateTimeoutWinner();
-                }
-            }, 1000);
+            evaluateTimeoutWinner();
         }
+    }, 1000);
+}
 
-        function evaluateTimeoutWinner() {
-            let purpleCorrect = 0, goldCorrect = 0;
-            players.purple.board.forEach((val, idx) => { if (val === idx) purpleCorrect++; });
-            players.gold.board.forEach((val, idx) => { if (val === idx) goldCorrect++; });
+function evaluateTimeoutWinner() {
+    let purpleCorrect = 0, goldCorrect = 0;
+    players.purple.board.forEach((val, idx) => { if (val === idx) purpleCorrect++; });
+    players.gold.board.forEach((val, idx) => { if (val === idx) goldCorrect++; });
 
-            if (purpleCorrect > goldCorrect) {
-                endGame('purple', `时间到！紫方正确 ${purpleCorrect} 块，优于金方 ${goldCorrect} 块`);
-            } else if (goldCorrect > purpleCorrect) {
-                endGame('gold', `时间到！金方正确 ${goldCorrect} 块，优于紫方 ${purpleCorrect} 块`);
-            } else {
-                endGame('draw', `时间到！双方均正确完成 ${purpleCorrect} 块！`);
-            }
-        }
+    if (purpleCorrect > goldCorrect) {
+        endGame('purple', `时间到！紫方正确 ${purpleCorrect} 块，优于金方 ${goldCorrect} 块`);
+    } else if (goldCorrect > purpleCorrect) {
+        endGame('gold', `时间到！金方正确 ${goldCorrect} 块，优于紫方 ${purpleCorrect} 块`);
+    } else {
+        endGame('draw', `时间到！双方均正确完成 ${purpleCorrect} 块！`);
+    }
+}
 
-        function endGame(winner, customMessage = "") {
-            clearInterval(timerInterval);
-            bgm.pause();
+function endGame(winner, customMessage = "") {
+    clearInterval(timerInterval);
+    bgm.pause();
 
-            const resultModal = document.getElementById("result-modal");
-            const winnerTitle = document.getElementById("winner-title");
-            const winnerDesc = document.getElementById("winner-desc");
+    const resultModal = document.getElementById("result-modal");
+    const winnerTitle = document.getElementById("winner-title");
+    const winnerDesc = document.getElementById("winner-desc");
 
-            if (winner === 'purple') {
-                winnerTitle.innerText = "💜 紫方玩家 获胜！";
-                winnerTitle.className = "winner-text winner-purple";
-                winnerDesc.innerText = customMessage || "率先还原全部拼图并破解算术关卡！";
-            } else if (winner === 'gold') {
-                winnerTitle.innerText = "👑 金方玩家 获胜！";
-                winnerTitle.className = "winner-text winner-gold";
-                winnerDesc.innerText = customMessage || "率先还原全部拼图并破解算术关卡！";
-            } else {
-                winnerTitle.innerText = "🤝 势均力敌 - 平局！";
-                winnerTitle.className = "winner-text winner-draw";
-                winnerDesc.innerText = customMessage;
-            }
+    if (winner === 'purple') {
+        winnerTitle.innerText = "💜 紫方玩家 获胜！";
+        winnerTitle.className = "winner-text winner-purple";
+        winnerDesc.innerText = customMessage || "率先还原全部拼图并破解算术关卡！";
+    } else if (winner === 'gold') {
+        winnerTitle.innerText = "👑 金方玩家 获胜！";
+        winnerTitle.className = "winner-text winner-gold";
+        winnerDesc.innerText = customMessage || "率先还原全部拼图并破解算术关卡！";
+    } else {
+        winnerTitle.innerText = "🤝 势均力敌 - 平局！";
+        winnerTitle.className = "winner-text winner-draw";
+        winnerDesc.innerText = customMessage;
+    }
 
-            resultModal.classList.remove("hidden");
-        }
+    resultModal.classList.remove("hidden");
+}
     </script>
 </body>
 </html>
